@@ -81,16 +81,12 @@ import {
   LuChevronsUp,
   LuCircle,
   LuEllipsisVertical,
-  LuFile,
   LuFolder,
   LuFolderOpen,
   LuGripVertical,
-  LuHash,
   LuList,
   LuRefreshCw,
   LuSearch,
-  LuToggleLeft,
-  LuType,
 } from "react-icons/lu";
 
 /* -------------------------------------------------------------------------- */
@@ -410,20 +406,10 @@ function NodeRenderer<TMetadata>(props: NodeRendererProps<TMetadata>) {
     renderIcon(context)
   ) : method ? null : (
     <span className={styles.nodeIcon}>
-      {nodeKind === "schema" || nodeKind === "component" ? (
-        <LuBraces size={14} />
-      ) : nodeKind === "object" ? (
+      {nodeKind === "schema" || nodeKind === "component" || nodeKind === "object" ? (
         <LuBraces size={14} />
       ) : nodeKind === "array" || nodeKind === "items" ? (
         <LuList size={14} />
-      ) : nodeKind === "string" ? (
-        <LuType size={14} />
-      ) : nodeKind === "number" || nodeKind === "integer" ? (
-        <LuHash size={14} />
-      ) : nodeKind === "boolean" ? (
-        <LuToggleLeft size={14} />
-      ) : nodeKind === "property" || nodeKind === "null" || nodeKind === "unknown" ? (
-        <LuCircle size={10} />
       ) : isBranch ? (
         isExpanded ? (
           <LuFolderOpen size={14} />
@@ -431,7 +417,9 @@ function NodeRenderer<TMetadata>(props: NodeRendererProps<TMetadata>) {
           <LuFolder size={14} />
         )
       ) : (
-        <LuFile size={14} />
+        /* Primitive leaves (string, number, boolean, null, property, tag, etc.)
+           use a unified small dot for a clean, consistent look. */
+        <LuCircle size={8} />
       )}
     </span>
   );
@@ -493,16 +481,16 @@ function NodeRenderer<TMetadata>(props: NodeRendererProps<TMetadata>) {
           <span
             key={`guide-${i}`}
             className={styles.indentGuide}
-            style={{ left: `${(i + 2) * 16}px` }}
+            style={{ left: `${(i + 2) * 16 - 1}px` }}
           />
         ))}
-      {draggable && (
+      {draggable && canDragNode && (
         <span
-          className={`${styles.dragHandle} ${canDragNode ? "" : styles.dragHandleDisabled}`}
-          draggable={canDragNode}
-          onDragStart={canDragNode ? (event) => onDragStart(node, event) : undefined}
-          onDragEnd={draggable ? onDragEnd : undefined}
-          title={canDragNode ? "Drag to reorder" : "Cannot drag this node"}
+          className={styles.dragHandle}
+          draggable
+          onDragStart={(event) => onDragStart(node, event)}
+          onDragEnd={onDragEnd}
+          title="Drag to reorder"
           aria-label="Drag to reorder"
         >
           <DragHandleIcon />
@@ -634,6 +622,12 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
   const canDragNode = useCallback(
     (node: TreeNode<TMetadata>) => {
       if (!draggable) {
+        return false;
+      }
+
+      /* Section nodes (e.g. APIs, Components) are not draggable by default. */
+      const meta = node.metadata as Record<string, unknown> | undefined;
+      if (meta?.kind === "section") {
         return false;
       }
 

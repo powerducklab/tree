@@ -714,6 +714,27 @@
   font-size: 10px;
 }
 
+/* Section nodes (APIs, Components, Webhooks): uppercase headers with accent color */
+.pde-tree-kind-section {
+  height: 32px !important;
+}
+
+.pde-tree-kind-section .pde-tree-nodeLabel {
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold, 600);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-secondary, #6f747c);
+}
+
+.pde-tree-kind-section .pde-tree-nodeIcon {
+  color: var(--color-accent, #f28c28);
+}
+
+.pde-tree-kind-section.pde-tree-nodeRowSelected .pde-tree-nodeLabel {
+  color: var(--color-text-primary, #26282b);
+}
+
 /* ========================================================================== */
 /* Variant: schema (JSON Schema navigation tree)                              */
 /* ========================================================================== */
