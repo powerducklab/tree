@@ -65,7 +65,7 @@ export interface DocTreeOptions {
   showComponents?: boolean;
   /** Include webhooks section. Default true. */
   showWebhooks?: boolean;
-  /** Expand operation details (parameters, request body, responses). Default true. */
+  /** Expand operation details (parameters, request body, responses). Default false. */
   expandOperationDetails?: boolean;
 }
 
@@ -93,7 +93,7 @@ const DEFAULT_OPTIONS: Required<DocTreeOptions> = {
   showInternal: false,
   showComponents: false,
   showWebhooks: true,
-  expandOperationDetails: true,
+  expandOperationDetails: false,
 };
 
 /* -------------------------------------------------------------------------- */
@@ -883,13 +883,14 @@ function buildComponentsSection(
 /**
  * Builds a Stripe-style API documentation tree from an OpenAPI 3.x document.
  *
- * Unlike the debug navigation tree, this tree expands each operation to show
- * parameters, request body, and responses as child nodes — suitable for
- * documentation-style navigation.
+ * By default the tree stops at the operation (method) level. Pass
+ * `expandOperationDetails: true` to also include parameters, request body,
+ * and responses as child nodes.
  *
  * Navigation strategy (in priority order):
  * 1. OAS 3.2 native parent-nested tags
- * 2. Flat tag grouping (fallback)
+ * 2. x-tagGroups navigation
+ * 3. Flat tag grouping (fallback)
  *
  * Supported extensions: x-order, x-displayName, x-internal, x-scalar-ignore.
  */

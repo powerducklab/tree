@@ -57,6 +57,39 @@ const tagGroupsDocument = {
   },
 };
 
+const documentWithDetails = {
+  openapi: "3.1.0",
+  info: { title: "Details API", version: "1.0.0" },
+  tags: [{ name: "Users" }],
+  paths: {
+    "/users": {
+      get: {
+        operationId: "listUsers",
+        summary: "List users",
+        tags: ["Users"],
+        parameters: [
+          { name: "limit", in: "query", schema: { type: "integer" } },
+        ],
+        responses: {
+          "200": {
+            description: "OK",
+            content: { "application/json": { schema: { type: "object" } } },
+          },
+        },
+      },
+      post: {
+        operationId: "createUser",
+        summary: "Create user",
+        tags: ["Users"],
+        requestBody: {
+          content: { "application/json": { schema: { type: "object" } } },
+        },
+        responses: { "201": { description: "Created" } },
+      },
+    },
+  },
+};
+
 /* -------------------------------------------------------------------------- */
 /* Tests                                                                      */
 /* -------------------------------------------------------------------------- */
@@ -108,6 +141,36 @@ describe("buildDocTree", () => {
     expect(operations.length).toBeGreaterThan(0);
     expect(operations[0]?.metadata?.method).toBeDefined();
     expect(operations[0]?.metadata?.path).toBeDefined();
+  });
+
+  it("does not expand operation details by default", () => {
+    const result = buildDocTree(documentWithDetails);
+    const usersTag = result.root.children?.find((n) => n.name === "Users");
+    const operations = usersTag?.children ?? [];
+
+    expect(operations.length).toBe(2);
+    for (const op of operations) {
+      expect(op.children).toBeUndefined();
+    }
+  });
+
+  it("expands operation details when expandOperationDetails is true", () => {
+    const result = buildDocTree(documentWithDetails, {
+      expandOperationDetails: true,
+    });
+    const usersTag = result.root.children?.find((n) => n.name === "Users");
+    const operations = usersTag?.children ?? [];
+
+    const getOp = operations.find((op) => op.metadata?.method === "get");
+    const postOp = operations.find((op) => op.metadata?.method === "post");
+
+    expect(getOp?.children).toBeDefined();
+    expect(getOp?.children?.some((c) => c.name === "Parameters")).toBe(true);
+    expect(getOp?.children?.some((c) => c.name === "Responses")).toBe(true);
+
+    expect(postOp?.children).toBeDefined();
+    expect(postOp?.children?.some((c) => c.name === "Request Body")).toBe(true);
+    expect(postOp?.children?.some((c) => c.name === "Responses")).toBe(true);
   });
 });
 
