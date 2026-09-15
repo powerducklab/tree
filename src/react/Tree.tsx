@@ -87,6 +87,7 @@ import {
   LuList,
   LuRefreshCw,
   LuSearch,
+  LuZap,
 } from "react-icons/lu";
 
 /* -------------------------------------------------------------------------- */
@@ -309,6 +310,7 @@ interface NodeRendererProps<TMetadata> {
   draggable: boolean;
   dragState: DragState;
   canDragNode: boolean;
+  canDragNodeFn: (node: TreeNode<TMetadata>) => boolean;
   onDragStart: (node: TreeNode<TMetadata>, event: React.DragEvent) => void;
   onDragOver: (node: TreeNode<TMetadata>, event: React.DragEvent) => void;
   onDragLeave: (node: TreeNode<TMetadata>) => void;
@@ -339,6 +341,7 @@ function NodeRenderer<TMetadata>(props: NodeRendererProps<TMetadata>) {
     draggable,
     dragState,
     canDragNode,
+    canDragNodeFn,
     onDragStart,
     onDragOver,
     onDragLeave,
@@ -406,7 +409,11 @@ function NodeRenderer<TMetadata>(props: NodeRendererProps<TMetadata>) {
     renderIcon(context)
   ) : method ? null : (
     <span className={styles.nodeIcon}>
-      {nodeKind === "schema" || nodeKind === "component" || nodeKind === "object" ? (
+      {nodeKind === "section" && metadata?.section === "components" ? (
+        <LuBraces size={14} />
+      ) : nodeKind === "section" && metadata?.section === "webhooks" ? (
+        <LuZap size={14} />
+      ) : nodeKind === "schema" || nodeKind === "component" || nodeKind === "object" ? (
         <LuBraces size={14} />
       ) : nodeKind === "array" || nodeKind === "items" ? (
         <LuList size={14} />
@@ -535,6 +542,7 @@ function NodeRenderer<TMetadata>(props: NodeRendererProps<TMetadata>) {
           {...props}
           node={child}
           depth={depth + 1}
+          canDragNode={canDragNodeFn(child)}
         />
       ))}
     </div>
@@ -1112,7 +1120,7 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
             <NodeRenderer
               key={node.id}
               node={node}
-              depth={1}
+              depth={0}
               expandedIds={visibleExpandedIds}
               selectedId={selectedId}
               onToggle={expansion.toggleNode}
@@ -1127,6 +1135,7 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
               draggable={draggable}
               dragState={dragState}
               canDragNode={canDragNode(node)}
+              canDragNodeFn={canDragNode}
               onDragStart={handleDragStart}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}

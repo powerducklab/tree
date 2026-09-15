@@ -699,8 +699,8 @@ function buildComponentsSection(
     order: Number.MAX_SAFE_INTEGER - 1,
     children: sortNodes(schemaNodes),
     metadata: {
-      source: "tag",
-      kind: "component",
+      source: "section",
+      kind: "section",
       section: "components",
     },
   };
@@ -769,8 +769,8 @@ function buildWebhooksSection(
     order: Number.MAX_SAFE_INTEGER - 2,
     children: sortNodes(webhookNodes),
     metadata: {
-      source: "tag",
-      kind: "webhook",
+      source: "section",
+      kind: "section",
       section: "webhooks",
     },
   };

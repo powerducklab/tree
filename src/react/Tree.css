@@ -562,18 +562,32 @@
   color: var(--color-danger, #c95555);
 }
 
+.pde-tree-contextMenuItemDanger .pde-tree-contextMenuIcon {
+  color: var(--color-danger, #c95555);
+}
+
 .pde-tree-contextMenuItemDanger:hover:not(:disabled) {
   background: var(--color-danger-soft, #fff2f1);
 }
 
 .pde-tree-contextMenuItemConfirming {
-  background: var(--color-danger-soft, #fff2f1);
+  background: var(--color-danger, #c95555);
+  color: var(--color-text-inverse, #ffffff);
   font-weight: var(--font-weight-semibold, 600);
 }
 
 .pde-tree-contextMenuItemConfirming:hover:not(:disabled) {
   background: var(--color-danger, #c95555);
   color: var(--color-text-inverse, #ffffff);
+}
+
+.pde-tree-contextMenuItemConfirming .pde-tree-contextMenuIcon {
+  color: var(--color-text-inverse, #ffffff);
+}
+
+.pde-tree-contextMenuItem:focus {
+  outline: none;
+  box-shadow: none;
 }
 
 .pde-tree-contextMenuIcon {
