@@ -193,11 +193,27 @@
 }
 
 .pde-tree-nodeRowSelected {
-  background: var(--color-accent-bg, #fff8ef);
+  background: var(--color-surface-hover, #f4f5f6);
+}
+
+.pde-tree-nodeRowSelected::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  background: var(--color-accent, #f28c28);
+  border-radius: 1px;
 }
 
 .pde-tree-nodeRowSelected:hover {
-  background: var(--color-accent-bg-soft, #fff3e5);
+  background: var(--color-surface-active, #e7eaed);
+}
+
+.pde-tree-nodeRowSelected .pde-tree-nodeLabel {
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--color-text-primary, #26282b);
 }
 
 .pde-tree-branchControl {
@@ -235,8 +251,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   flex-shrink: 0;
   color: var(--color-text-tertiary, #989da5);
   cursor: grab;

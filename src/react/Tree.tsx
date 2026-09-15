@@ -21,6 +21,7 @@ import type {
   TreeRenderContext,
 } from "./libs/types";
 import { getAncestorIdsToReveal } from "./libs/utils";
+import { getMethodLabel } from "./libs/methods";
 import "./Tree.css";
 
 /* Plain CSS class name map (no CSS modules dependency for build reliability). */
@@ -75,15 +76,15 @@ import {
   LuBraces,
   LuChevronDown,
   LuChevronRight,
+  LuChevronsDown,
+  LuChevronsUp,
   LuEllipsisVertical,
   LuFile,
   LuFolder,
   LuFolderOpen,
-  LuFoldVertical,
   LuGripVertical,
   LuRefreshCw,
   LuSearch,
-  LuUnfoldVertical,
 } from "react-icons/lu";
 
 /* -------------------------------------------------------------------------- */
@@ -103,7 +104,7 @@ function SearchIcon() {
 }
 
 function DragHandleIcon() {
-  return <LuGripVertical size={16} aria-hidden="true" />;
+  return <LuGripVertical size={14} aria-hidden="true" />;
 }
 
 function MoreIcon() {
@@ -251,7 +252,7 @@ const METHOD_CLASS_MAP: Record<string, string> = {
 function MethodBadge({ method }: { method: string }) {
   const normalized = method.toLowerCase();
   const className = METHOD_CLASS_MAP[normalized] ?? styles.methodOther;
-  const label = normalized.slice(0, 4).toUpperCase();
+  const label = getMethodLabel(method);
 
   return <span className={`${styles.methodBadge} ${className}`}>{label}</span>;
 }
@@ -1012,7 +1013,7 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
                 title="Expand all"
                 aria-label="Expand all"
               >
-                <LuUnfoldVertical size={14} aria-hidden="true" />
+                <LuChevronsDown size={14} aria-hidden="true" />
               </button>
               <button
                 type="button"
@@ -1022,7 +1023,7 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
                 title="Collapse all"
                 aria-label="Collapse all"
               >
-                <LuFoldVertical size={14} aria-hidden="true" />
+                <LuChevronsUp size={14} aria-hidden="true" />
               </button>
             </>
           )}
