@@ -2,7 +2,7 @@
 
 Extensible tree component for API navigation, schema exploration, and documentation. Built on a generic core with adapters for OpenAPI, JSON Schema, and custom data sources.
 
-[Website](https://powerduck.dev) · [Documentation](https://powerduck.dev/docs/tree) · [GitHub](https://github.com/powerducklab/tree) · [npm](https://www.npmjs.com/package/@powerduck/tree)
+[Website](https://www.powerduck.com) · [Documentation](https://www.powerduck.com/docs/tree) · [GitHub](https://github.com/powerducklab/tree) · [npm](https://www.npmjs.com/package/@powerduck/tree)
 
 ## Features
 

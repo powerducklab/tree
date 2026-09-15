@@ -472,6 +472,47 @@ describe("moveNode", () => {
 
     expect(result).toBeNull();
   });
+
+  it("moves node to another parent at specific index (before first child)", () => {
+    const result = moveNode(sampleTree, "a1", "b", 0);
+
+    expect(result).not.toBeNull();
+    const beta = result?.find((n) => n.id === "b");
+    expect(beta?.children?.map((n) => n.id)).toEqual(["a1", "b1"]);
+  });
+
+  it("moves node to another parent at specific index (after existing child)", () => {
+    const treeWithTwo = insertChild(sampleTree, "b", { id: "b2", name: "Beta Two" });
+    const result = moveNode(treeWithTwo, "a1", "b", 1);
+
+    const beta = result?.find((n) => n.id === "b");
+    expect(beta?.children?.map((n) => n.id)).toEqual(["b1", "a1", "b2"]);
+  });
+
+  it("clamps target index to parent children length", () => {
+    const result = moveNode(sampleTree, "a1", "b", 999);
+
+    const beta = result?.find((n) => n.id === "b");
+    expect(beta?.children?.map((n) => n.id)).toEqual(["b1", "a1"]);
+  });
+
+  it("moves root-level node into a parent at index 0", () => {
+    const result = moveNode(sampleTree, "c", "a", 0);
+
+    const alpha = result?.find((n) => n.id === "a");
+    expect(alpha?.children?.map((n) => n.id)).toEqual(["c", "a1", "a2"]);
+    expect(result?.find((n) => n.id === "c")).toBeUndefined();
+  });
+
+  it("preserves node children when moving across parents", () => {
+    /* "b" has children b1 and b1a. Move b into "a" at index 0. */
+    const result = moveNode(sampleTree, "b", "a", 0);
+
+    const alpha = result?.find((n) => n.id === "a");
+    const movedB = alpha?.children?.find((n) => n.id === "b");
+    expect(movedB?.children?.map((n) => n.id)).toEqual(["b1"]);
+    expect(movedB?.children?.[0]?.children?.map((n) => n.id)).toEqual(["b1a"]);
+  });
 });
 
 /* -------------------------------------------------------------------------- */

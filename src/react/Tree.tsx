@@ -73,16 +73,18 @@ const styles = {
 
 import {
   LuBraces,
+  LuChevronDown,
+  LuChevronRight,
   LuEllipsisVertical,
   LuFile,
   LuFolder,
+  LuFolderOpen,
   LuFoldVertical,
   LuGripVertical,
   LuRefreshCw,
   LuSearch,
   LuUnfoldVertical,
 } from "react-icons/lu";
-import { FaCaretRight } from "react-icons/fa";
 
 /* -------------------------------------------------------------------------- */
 /* Icons (react-icons/lucide, high-quality flat design)                       */
@@ -90,11 +92,9 @@ import { FaCaretRight } from "react-icons/fa";
 
 function ChevronIcon({ expanded }: { expanded: boolean }) {
   return (
-    <FaCaretRight
-      className={`${styles.expandIcon} ${expanded ? styles.expandIconExpanded : ""}`}
-      size={10}
-      aria-hidden="true"
-    />
+    <span className={styles.expandIcon}>
+      {expanded ? <LuChevronDown size={14} /> : <LuChevronRight size={14} />}
+    </span>
   );
 }
 
@@ -394,7 +394,11 @@ function NodeRenderer<TMetadata>(props: NodeRendererProps<TMetadata>) {
       {nodeKind === "schema" || nodeKind === "component" ? (
         <LuBraces size={14} />
       ) : isBranch ? (
-        <LuFolder size={14} />
+        isExpanded ? (
+          <LuFolderOpen size={14} />
+        ) : (
+          <LuFolder size={14} />
+        )
       ) : (
         <LuFile size={14} />
       )}
@@ -418,10 +422,7 @@ function NodeRenderer<TMetadata>(props: NodeRendererProps<TMetadata>) {
   const defaultSuffix = renderSuffix ? (
     renderSuffix(context)
   ) : (
-    <>
-      {method && <MethodBadge method={method} />}
-      {required && <span className={styles.requiredDot} title="Required" />}
-    </>
+    <>{required && <span className={styles.requiredDot} title="Required" />}</>
   );
 
   const rowClassName = [
@@ -481,6 +482,7 @@ function NodeRenderer<TMetadata>(props: NodeRendererProps<TMetadata>) {
         <span className={styles.expandIconPlaceholder} />
       )}
       {defaultIcon}
+      {method && <MethodBadge method={method} />}
       {defaultLabel}
       <span className={styles.nodeSuffix}>{defaultSuffix}</span>
       {showContextMenuButton && (
@@ -759,9 +761,24 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
       }
 
       let toIndex = position === "before" ? targetIndex : targetIndex + 1;
-
       const draggedPath = findPath(nodes, draggedId);
+      const targetParentId = targetPath.parent?.id ?? null;
+      const isCrossParent = draggedPath?.parent?.id ?? null !== targetParentId;
 
+      if (isCrossParent) {
+        /* Cross-directory move: move to target's parent at the calculated index. */
+        const movedNode = draggedPath?.target;
+        const newNodes = moveNode(nodes, draggedId, targetParentId, toIndex);
+
+        if (newNodes && movedNode) {
+          onMove?.(newNodes, movedNode, targetParentId);
+        }
+
+        setDragState(INITIAL_DRAG_STATE);
+        return;
+      }
+
+      /* Same-parent reorder. */
       if (draggedPath && draggedPath.parent === targetPath.parent) {
         const draggedIndex = siblings.findIndex((sibling) => sibling.id === draggedId);
 
