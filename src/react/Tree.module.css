@@ -1,0 +1,350 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  font-family: var(--font-family-ui, Inter, ui-sans-serif, system-ui, sans-serif);
+  font-size: var(--font-size-sm, 13px);
+  line-height: var(--line-height-normal, 20px);
+  color: var(--color-text-primary, #26282b);
+  background: var(--color-surface, #ffffff);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  padding: var(--space-2, 8px);
+  border-bottom: 1px solid var(--color-border-subtle, #eceff1);
+  flex-shrink: 0;
+}
+
+.searchRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1, 4px);
+  padding: var(--space-2, 8px);
+  border-bottom: 1px solid var(--color-border-subtle, #eceff1);
+  flex-shrink: 0;
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  height: var(--control-height-sm, 28px);
+  padding: 0 var(--space-2, 8px);
+  font-size: var(--font-size-xs, 12px);
+  font-family: inherit;
+  color: var(--color-text-primary, #26282b);
+  background: var(--color-surface-subtle, #f8f9fa);
+  border: 1px solid var(--color-border-default, #e0e4e8);
+  border-radius: var(--radius-sm, 4px);
+  outline: none;
+  transition: border-color var(--transition-fast, 140ms ease),
+    box-shadow var(--transition-fast, 140ms ease);
+}
+
+.searchInput:focus {
+  border-color: var(--color-accent, #f28c28);
+  box-shadow: 0 0 0 2px var(--color-focus-ring, rgba(242, 140, 40, 0.28));
+}
+
+.searchInput::placeholder {
+  color: var(--color-text-tertiary, #989da5);
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-height-sm, 28px);
+  height: var(--control-height-sm, 28px);
+  padding: 0;
+  font-size: var(--icon-size-sm, 14px);
+  color: var(--color-text-secondary, #6f747c);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm, 4px);
+  cursor: pointer;
+  transition: background var(--transition-fast, 140ms ease),
+    color var(--transition-fast, 140ms ease);
+  flex-shrink: 0;
+}
+
+.iconButton:hover:not(:disabled) {
+  background: var(--color-surface-hover, #f4f5f6);
+  color: var(--color-text-primary, #26282b);
+}
+
+.iconButton:active:not(:disabled) {
+  background: var(--color-surface-active, #e7eaed);
+}
+
+.iconButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.treeContainer {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--space-1, 4px) 0;
+}
+
+.treeContainer:focus {
+  outline: none;
+}
+
+/* Custom scrollbar */
+.treeContainer::-webkit-scrollbar {
+  width: 8px;
+}
+
+.treeContainer::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.treeContainer::-webkit-scrollbar-thumb {
+  background: var(--color-border-default, #e0e4e8);
+  border-radius: 4px;
+}
+
+.treeContainer::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-strong, #ccd2d8);
+}
+
+.nodeRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1, 4px);
+  padding: 2px var(--space-2, 8px);
+  cursor: default;
+  user-select: none;
+  white-space: nowrap;
+  transition: background var(--transition-fast, 140ms ease);
+}
+
+.nodeRow:hover {
+  background: var(--color-surface-hover, #f4f5f6);
+}
+
+.nodeRowSelected {
+  background: var(--color-surface-selected, #eef0f2);
+}
+
+.nodeRowSelected:hover {
+  background: var(--color-surface-active, #e7eaed);
+}
+
+.branchControl {
+  cursor: pointer;
+}
+
+.leafItem {
+  cursor: pointer;
+}
+
+.expandIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--color-text-tertiary, #989da5);
+  transition: transform var(--transition-fast, 140ms ease);
+}
+
+.expandIconExpanded {
+  transform: rotate(90deg);
+}
+
+.expandIconPlaceholder {
+  width: 16px;
+  flex-shrink: 0;
+}
+
+.nodeIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--color-text-tertiary, #989da5);
+}
+
+.nodeLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: var(--font-weight-regular, 400);
+}
+
+.nodeLabelBranch {
+  font-weight: var(--font-weight-medium, 500);
+}
+
+.nodeSuffix {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1, 4px);
+  flex-shrink: 0;
+}
+
+.methodBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 16px;
+  padding: 0 4px;
+  font-size: 9px;
+  font-weight: var(--font-weight-semibold, 600);
+  letter-spacing: 0.3px;
+  border-radius: var(--radius-xs, 3px);
+  flex-shrink: 0;
+}
+
+.methodGet {
+  color: var(--color-success, #428961);
+  background: var(--color-success-soft, #eff8f2);
+}
+
+.methodPost {
+  color: var(--color-info, #4f79bf);
+  background: var(--color-info-soft, #f0f5ff);
+}
+
+.methodPut {
+  color: var(--color-warning, #d98a22);
+  background: var(--color-warning-soft, #fff8e8);
+}
+
+.methodPatch {
+  color: var(--color-dynamic, #4d7ec8);
+  background: var(--color-accent-bg-soft, #f0f5ff);
+}
+
+.methodDelete {
+  color: var(--color-danger, #c95555);
+  background: var(--color-danger-soft, #fff2f1);
+}
+
+.methodOther {
+  color: var(--color-text-secondary, #6f747c);
+  background: var(--color-surface-subtle, #f8f9fa);
+}
+
+.deprecatedLabel {
+  text-decoration: line-through;
+  color: var(--color-text-tertiary, #989da5);
+}
+
+.requiredDot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--color-danger, #c95555);
+  flex-shrink: 0;
+}
+
+.highlight {
+  background: var(--color-accent-bg, #fff8ef);
+  color: var(--color-text-accent, #d97818);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+.indentGuide {
+  width: 1px;
+  align-self: stretch;
+  background: var(--color-border-subtle, #eceff1);
+  margin-left: 7px;
+  flex-shrink: 0;
+}
+
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6, 24px);
+  color: var(--color-text-tertiary, #989da5);
+  font-size: var(--font-size-xs, 12px);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Drag and drop                                                              */
+/* -------------------------------------------------------------------------- */
+
+.dragHandle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--color-text-tertiary, #989da5);
+  cursor: grab;
+  opacity: 0;
+  transition: opacity var(--transition-fast, 140ms ease),
+    color var(--transition-fast, 140ms ease);
+}
+
+.dragHandle:hover {
+  color: var(--color-text-primary, #26282b);
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
+.dragHandleDisabled {
+  cursor: not-allowed;
+  opacity: 0.3 !important;
+}
+
+.nodeRow:hover .dragHandle {
+  opacity: 1;
+}
+
+.nodeDragging {
+  opacity: 0.4;
+}
+
+.dropIndicatorBefore {
+  position: relative;
+}
+
+.dropIndicatorBefore::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  background: var(--color-accent, #f28c28);
+  border-radius: 1px;
+  pointer-events: none;
+}
+
+.dropIndicatorAfter {
+  position: relative;
+}
+
+.dropIndicatorAfter::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  background: var(--color-accent, #f28c28);
+  border-radius: 1px;
+  pointer-events: none;
+}
