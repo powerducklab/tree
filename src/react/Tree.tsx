@@ -59,6 +59,7 @@ const styles = {
   moreButtonActive: "pde-tree-moreButtonActive",
   nodeDragging: "pde-tree-nodeDragging",
   nodeIcon: "pde-tree-nodeIcon",
+  primitiveDot: "pde-tree-primitiveDot",
   nodeLabel: "pde-tree-nodeLabel",
   nodeLabelBranch: "pde-tree-nodeLabelBranch",
   nodeRow: "pde-tree-nodeRow",
@@ -78,7 +79,6 @@ import {
   LuBraces,
   LuChevronDown,
   LuChevronRight,
-  LuCircle,
   LuEllipsisVertical,
   LuFolder,
   LuFolderOpen,
@@ -504,8 +504,8 @@ function NodeRendererInner<TMetadata>(props: NodeRendererProps<TMetadata>) {
         )
       ) : (
         /* Primitive leaves (string, number, boolean, null, property, tag, etc.)
-           use a unified small dot for a clean, consistent look. */
-        <LuCircle size={8} />
+           use a unified CSS dot for consistent size and centering. */
+        <span className={styles.primitiveDot} />
       )}
     </span>
   );

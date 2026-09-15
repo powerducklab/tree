@@ -294,6 +294,15 @@
   color: var(--color-text-tertiary, #989da5);
 }
 
+/* Primitive leaf dot: consistently sized and centered within the 14px icon box. */
+.pde-tree-primitiveDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  display: inline-block;
+}
+
 /* -------------------------------------------------------------------------- */
 /* Node label                                                                 */
 /* -------------------------------------------------------------------------- */
