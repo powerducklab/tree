@@ -8,7 +8,7 @@ import {
 } from "react";
 
 import type { TreeNode } from "../core/types";
-import { findPath, reorderNode } from "../core/tree-utils";
+import { findPath, moveNode, reorderNode } from "../core/tree-utils";
 
 import { useTreeExpansion } from "./hooks/useTreeExpansion";
 import { useTreeSearch } from "./hooks/useTreeSearch";
@@ -28,6 +28,7 @@ const styles = {
   dragHandleDisabled: "pde-tree-dragHandleDisabled",
   dropIndicatorAfter: "pde-tree-dropIndicatorAfter",
   dropIndicatorBefore: "pde-tree-dropIndicatorBefore",
+  dropIndicatorChild: "pde-tree-dropIndicatorChild",
   emptyState: "pde-tree-emptyState",
   expandIcon: "pde-tree-expandIcon",
   expandIconExpanded: "pde-tree-expandIconExpanded",
@@ -52,7 +53,9 @@ const styles = {
   nodeSuffix: "pde-tree-nodeSuffix",
   requiredDot: "pde-tree-requiredDot",
   root: "pde-tree-root",
+  searchIcon: "pde-tree-searchIcon",
   searchInput: "pde-tree-searchInput",
+  searchInputWrap: "pde-tree-searchInputWrap",
   searchRow: "pde-tree-searchRow",
   toolbar: "pde-tree-toolbar",
   treeContainer: "pde-tree-treeContainer",
@@ -187,7 +190,7 @@ function MethodBadge({ method }: { method: string }) {
 interface DragState {
   draggedId: string | null;
   dragOverId: string | null;
-  dragOverPosition: "before" | "after" | null;
+  dragOverPosition: "before" | "after" | "child" | null;
 }
 
 const INITIAL_DRAG_STATE: DragState = {
@@ -349,6 +352,7 @@ function NodeRenderer<TMetadata>(props: NodeRendererProps<TMetadata>) {
     isDragging ? styles.nodeDragging : "",
     isDragOver && dragOverPosition === "before" ? styles.dropIndicatorBefore : "",
     isDragOver && dragOverPosition === "after" ? styles.dropIndicatorAfter : "",
+    isDragOver && dragOverPosition === "child" ? styles.dropIndicatorChild : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -441,6 +445,7 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
     rootRef,
     draggable = false,
     onReorder,
+    onMove,
     canDrag,
     canDrop,
   } = props;
@@ -525,8 +530,37 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
       event.dataTransfer.dropEffect = "move";
 
       const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-      const isAfter = event.clientY > rect.top + rect.height / 2;
-      const position: "before" | "after" = isAfter ? "after" : "before";
+      const relativeY = (event.clientY - rect.top) / rect.height;
+      const hasChildren = (node.children?.length ?? 0) > 0;
+
+      /* Three-zone detection for branch nodes: before (top 25%), child (middle 50%), after (bottom 25%).
+         Leaf nodes only support before/after. */
+      let position: "before" | "after" | "child";
+
+      if (hasChildren) {
+        if (relativeY < 0.25) {
+          position = "before";
+        } else if (relativeY > 0.75) {
+          position = "after";
+        } else {
+          position = "child";
+        }
+      } else {
+        position = relativeY < 0.5 ? "before" : "after";
+      }
+
+      /* Prevent dropping into own descendant (circular reference). */
+      if (position === "child") {
+        const draggedPath = findPath(nodes, dragState.draggedId);
+
+        if (draggedPath) {
+          const isDescendant = draggedPath.ancestorIds.includes(node.id);
+
+          if (isDescendant) {
+            return;
+          }
+        }
+      }
 
       /* Check canDrop predicate if provided. */
       if (canDrop) {
@@ -578,7 +612,27 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
         return;
       }
 
-      /* Find the index of the target node within its parent. */
+      /* Cross-level move: drop into a folder. */
+      if (position === "child") {
+        const draggedPath = findPath(nodes, draggedId);
+        const movedNode = draggedPath?.target;
+
+        if (!movedNode) {
+          setDragState(INITIAL_DRAG_STATE);
+          return;
+        }
+
+        const newNodes = moveNode(nodes, draggedId, node.id);
+
+        if (newNodes) {
+          onMove?.(newNodes, movedNode, node.id);
+        }
+
+        setDragState(INITIAL_DRAG_STATE);
+        return;
+      }
+
+      /* Same-level reorder: before or after. */
       const targetPath = findPath(nodes, node.id);
 
       if (!targetPath) {
@@ -594,10 +648,8 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
         return;
       }
 
-      /* Calculate the insertion index. */
       let toIndex = position === "before" ? targetIndex : targetIndex + 1;
 
-      /* If dragging a node that comes before the target, adjust for removal. */
       const draggedPath = findPath(nodes, draggedId);
 
       if (draggedPath && draggedPath.parent === targetPath.parent) {
@@ -616,7 +668,7 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
 
       setDragState(INITIAL_DRAG_STATE);
     },
-    [dragState, nodes, onReorder],
+    [dragState, nodes, onMove, onReorder],
   );
 
   const handleDragEnd = useCallback(() => {
@@ -656,6 +708,43 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
         return path?.target;
       },
       scrollToNode: locateNode,
+      locateNode: (predicate: (node: TreeNode<TMetadata>) => boolean) => {
+        /* BFS search for the first matching node. */
+        const queue: TreeNode<TMetadata>[] = [...nodes];
+
+        while (queue.length > 0) {
+          const node = queue.shift();
+
+          if (!node) {
+            continue;
+          }
+
+          if (predicate(node)) {
+            /* Expand all ancestors and select the node. */
+            const path = findPath(nodes, node.id);
+
+            if (path) {
+              expansion.setExpandedIds([
+                ...new Set([...expansion.expandedIds, ...path.ancestorIds]),
+              ]);
+            }
+
+            setSelectedId(node.id);
+
+            requestAnimationFrame(() => {
+              expansion.scrollToNode(node.id);
+            });
+
+            return node;
+          }
+
+          if (node.children?.length) {
+            queue.push(...node.children);
+          }
+        }
+
+        return undefined;
+      },
     }),
     [expansion, locateNode, selectedId, nodes],
   );
@@ -681,17 +770,19 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
 
       {searchable && (
         <div className={styles.searchRow}>
-          <span style={{ color: "var(--color-text-tertiary)", flexShrink: 0 }}>
-            <SearchIcon />
-          </span>
-          <input
-            className={styles.searchInput}
-            type="search"
-            placeholder={searchPlaceholder}
-            value={search.query}
-            onChange={(event) => handleSearchChange(event.target.value)}
-            aria-label="Search tree"
-          />
+          <div className={styles.searchInputWrap}>
+            <span className={styles.searchIcon}>
+              <SearchIcon />
+            </span>
+            <input
+              className={styles.searchInput}
+              type="search"
+              placeholder={searchPlaceholder}
+              value={search.query}
+              onChange={(event) => handleSearchChange(event.target.value)}
+              aria-label="Search tree"
+            />
+          </div>
           {showExpandAll && (
             <>
               <button

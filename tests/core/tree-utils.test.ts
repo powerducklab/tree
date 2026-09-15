@@ -458,4 +458,18 @@ describe("moveNode", () => {
     const beta = result?.find((n) => n.id === "b");
     expect(beta?.children?.map((n) => n.id)).toEqual(["b1", "b2", "a1"]);
   });
+
+  it("returns null when target is a descendant of the moved node (circular reference)", () => {
+    /* Trying to move "a" into "a1" (its own child) should fail. */
+    const result = moveNode(sampleTree, "a", "a1");
+
+    expect(result).toBeNull();
+  });
+
+  it("returns null when target is a deep descendant of the moved node", () => {
+    /* b1 has child b1a. Moving b into b1a should fail. */
+    const result = moveNode(sampleTree, "b", "b1a");
+
+    expect(result).toBeNull();
+  });
 });

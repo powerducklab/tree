@@ -9,7 +9,8 @@ Extensible tree component for API navigation, schema exploration, and documentat
 - **JSON Schema adapter** — deep expansion of nested properties, arrays, combinators with `jsonPath` metadata for editor line jumping
 - **Doc adapter** — Stripe-style documentation tree with parameters, request body, and responses
 - **React component** — search, expand/collapse, keyboard navigation, method badges, custom render props
-- **Drag and drop reordering** — reorder nodes within the same parent with visual drop indicators, `canDrag`/`canDrop` predicates, and `onReorder` callback
+- **Drag and drop** — reorder within the same parent **and cross-level move into folders**, with three-zone drop detection, `canDrag`/`canDrop` predicates, `onReorder`/`onMove` callbacks, and circular reference prevention
+- **Imperative locate** — `locateNode(predicate)` finds a node, expands all ancestors, selects it, and scrolls into view (ideal for "jump to API" features)
 - **CSS variable theming** — compatible with powerduck `tokens.css`, light/dark mode
 - **Zero hard dependencies** — core and adapters have no runtime dependencies; React layer requires `react` and `react-dom`
 
@@ -114,9 +115,11 @@ function FileTree() {
 }
 ```
 
-## Drag and Drop Reordering
+## Drag and Drop
 
-Enable drag and drop with the `draggable` prop. Nodes can be reordered within the same parent by dragging the grip handle.
+Enable drag and drop with the `draggable` prop. Nodes can be reordered within the same parent **or moved into a different parent** (cross-level) by dragging the grip handle.
+
+### Reordering (same level)
 
 ```tsx
 import { useState } from "react";
@@ -141,6 +144,41 @@ function SortableTree({ initialNodes }) {
 }
 ```
 
+### Cross-level move (drag into folder)
+
+When dragging over a branch node, the middle 50% of the row highlights the node as a drop target (folder). Dropping there moves the node to become a child of that folder.
+
+```tsx
+import { useState } from "react";
+import { Tree } from "@powerduck/tree/react";
+import type { TreeNode } from "@powerduck/tree/core";
+
+function MoveableTree({ initialNodes }) {
+  const [nodes, setNodes] = useState(initialNodes);
+
+  const handleMove = (newNodes: TreeNode[], movedNode, targetParentId) => {
+    console.log(`Moved "${movedNode.name}" into folder "${targetParentId}"`);
+    setNodes(newNodes);
+  };
+
+  return (
+    <Tree
+      nodes={nodes}
+      draggable
+      onReorder={(result) => setNodes(result.nodes)}
+      onMove={handleMove}
+    />
+  );
+}
+```
+
+Drop zones on a branch node:
+- **Top 25%** — insert before (reorder)
+- **Middle 50%** — move into this folder (cross-level)
+- **Bottom 25%** — insert after (reorder)
+
+Circular references are automatically prevented: a node cannot be dropped into its own descendant.
+
 ### Control which nodes can be dragged
 
 ```tsx
@@ -159,14 +197,53 @@ function SortableTree({ initialNodes }) {
   nodes={nodes}
   draggable
   canDrop={(dragged, target, position) => {
-    /* Only allow dropping after nodes, not before */
-    return position === "after";
+    /* position is "before" | "after" | "child" */
+    return position !== "child" || target.metadata?.type === "folder";
   }}
   onReorder={handleReorder}
+  onMove={(nodes) => setNodes(nodes)}
 />
 ```
 
-The `onReorder` callback receives a `ReorderResult` containing the new tree, the moved node, parent ID, and from/to indices. Use `reorderNode` and `moveNode` from the core for programmatic reordering.
+## Imperative Handle
+
+Access tree methods via `ref`:
+
+```tsx
+import { useRef } from "react";
+import { Tree } from "@powerduck/tree/react";
+import type { TreeHandle } from "@powerduck/tree/react";
+
+function TreeWithLocate() {
+  const treeRef = useRef<TreeHandle>(null);
+
+  const locateByOperationId = (operationId: string) => {
+    const found = treeRef.current?.locateNode((node) =>
+      node.metadata?.operationId === operationId
+    );
+    /* found is the matched TreeNode, or undefined if not found */
+  };
+
+  return (
+    <>
+      <button onClick={() => locateByOperationId("getPet")}>Locate getPet</button>
+      <Tree ref={treeRef} nodes={nodes} />
+    </>
+  );
+}
+```
+
+### Handle methods
+
+| Method | Description |
+| --- | --- |
+| `expandAll()` | Expand all nodes |
+| `collapseAll()` | Collapse all nodes |
+| `expandToDepth(depth)` | Expand nodes to a specific depth |
+| `getExpandedIds()` | Get currently expanded node IDs |
+| `getSelectedNode()` | Get the currently selected node |
+| `scrollToNode(id)` | Scroll a node into view by ID |
+| `locateNode(predicate)` | Find a node by predicate, expand ancestors, select, and scroll into view |
 
 ## API Reference
 

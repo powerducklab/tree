@@ -18,7 +18,7 @@ export interface TreeRenderContext<TMetadata = unknown> {
   /** Whether this node is the current drop target. */
   isDragOver: boolean;
   /** Drop position relative to this node. */
-  dragOverPosition: "before" | "after" | null;
+  dragOverPosition: "before" | "after" | "child" | null;
 }
 
 /**
@@ -91,6 +91,9 @@ export interface TreeProps<TMetadata = unknown> {
   /** Called when a node is reordered via drag and drop. */
   onReorder?: (result: ReorderResult<TMetadata>) => void;
 
+  /** Called when a node is moved to a different parent via drag and drop. */
+  onMove?: (nodes: TreeNode<TMetadata>[], movedNode: TreeNode<TMetadata>, targetParentId: string | null) => void;
+
   /** Predicate to control which nodes can be dragged. Default all nodes draggable. */
   canDrag?: (node: TreeNode<TMetadata>) => boolean;
 
@@ -98,7 +101,7 @@ export interface TreeProps<TMetadata = unknown> {
   canDrop?: (
     draggedNode: TreeNode<TMetadata>,
     targetNode: TreeNode<TMetadata>,
-    position: "before" | "after",
+    position: "before" | "after" | "child",
   ) => boolean;
 }
 
@@ -118,4 +121,6 @@ export interface TreeHandle {
   getSelectedNode: () => TreeNode | undefined;
   /** Scroll a node into view by ID. */
   scrollToNode: (id: string) => void;
+  /** Find a node by predicate, expand its ancestors, select it, and scroll into view. Returns the found node or undefined. */
+  locateNode: (predicate: (node: TreeNode) => boolean) => TreeNode | undefined;
 }

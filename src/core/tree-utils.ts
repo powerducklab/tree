@@ -564,6 +564,15 @@ export function moveNode<TMetadata>(
 ): TreeNode<TMetadata>[] | null {
   let removedNode: TreeNode<TMetadata> | null = null;
 
+  /* Guard against circular references: cannot move a node into its own descendant. */
+  if (targetParentId !== null) {
+    const sourcePath = findPath(nodes, nodeId);
+
+    if (sourcePath && sourcePath.ancestorIds.includes(targetParentId)) {
+      return null;
+    }
+  }
+
   const removeFromTree = (
     currentNodes: TreeNode<TMetadata>[],
   ): TreeNode<TMetadata>[] => {

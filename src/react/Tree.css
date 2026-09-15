@@ -1,3 +1,5 @@
+/* @powerduck/tree — compact, high-density tree component */
+
 .pde-tree-root {
   display: flex;
   flex-direction: column;
@@ -5,35 +7,60 @@
   height: 100%;
   min-height: 0;
   font-family: var(--font-family-ui, Inter, ui-sans-serif, system-ui, sans-serif);
-  font-size: var(--font-size-sm, 13px);
-  line-height: var(--line-height-normal, 20px);
+  font-size: var(--font-size-xs, 12px);
+  line-height: var(--line-height-tight, 16px);
   color: var(--color-text-primary, #26282b);
   background: var(--color-surface, #ffffff);
 }
 
+/* -------------------------------------------------------------------------- */
+/* Toolbar                                                                    */
+/* -------------------------------------------------------------------------- */
+
 .pde-tree-toolbar {
   display: flex;
   align-items: center;
-  gap: var(--space-2, 8px);
-  padding: var(--space-2, 8px);
+  gap: 6px;
+  padding: 6px 8px;
   border-bottom: 1px solid var(--color-border-subtle, #eceff1);
   flex-shrink: 0;
 }
+
+/* -------------------------------------------------------------------------- */
+/* Search row — Chakra InputGroup style                                       */
+/* -------------------------------------------------------------------------- */
 
 .pde-tree-searchRow {
   display: flex;
   align-items: center;
-  gap: var(--space-1, 4px);
-  padding: var(--space-2, 8px);
+  padding: 6px 8px;
   border-bottom: 1px solid var(--color-border-subtle, #eceff1);
   flex-shrink: 0;
+  gap: 6px;
+}
+
+.pde-tree-searchInputWrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.pde-tree-searchIcon {
+  position: absolute;
+  left: 8px;
+  display: flex;
+  align-items: center;
+  color: var(--color-text-tertiary, #989da5);
+  pointer-events: none;
+  z-index: 1;
 }
 
 .pde-tree-searchInput {
-  flex: 1;
-  min-width: 0;
-  height: var(--control-height-sm, 28px);
-  padding: 0 var(--space-2, 8px);
+  width: 100%;
+  height: 26px;
+  padding: 0 8px 0 28px;
   font-size: var(--font-size-xs, 12px);
   font-family: inherit;
   color: var(--color-text-primary, #26282b);
@@ -42,39 +69,51 @@
   border-radius: var(--radius-sm, 4px);
   outline: none;
   transition: border-color var(--transition-fast, 140ms ease),
-    box-shadow var(--transition-fast, 140ms ease);
+    box-shadow var(--transition-fast, 140ms ease),
+    background var(--transition-fast, 140ms ease);
+}
+
+.pde-tree-searchInput:hover {
+  border-color: var(--color-border-strong, #ccd2d8);
 }
 
 .pde-tree-searchInput:focus {
   border-color: var(--color-accent, #f28c28);
   box-shadow: 0 0 0 2px var(--color-focus-ring, rgba(242, 140, 40, 0.28));
+  background: var(--color-surface, #ffffff);
 }
 
 .pde-tree-searchInput::placeholder {
   color: var(--color-text-tertiary, #989da5);
 }
 
+/* -------------------------------------------------------------------------- */
+/* Icon buttons                                                               */
+/* -------------------------------------------------------------------------- */
+
 .pde-tree-iconButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--control-height-sm, 28px);
-  height: var(--control-height-sm, 28px);
+  width: 26px;
+  height: 26px;
   padding: 0;
   font-size: var(--icon-size-sm, 14px);
   color: var(--color-text-secondary, #6f747c);
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
   border-radius: var(--radius-sm, 4px);
   cursor: pointer;
   transition: background var(--transition-fast, 140ms ease),
-    color var(--transition-fast, 140ms ease);
+    color var(--transition-fast, 140ms ease),
+    border-color var(--transition-fast, 140ms ease);
   flex-shrink: 0;
 }
 
 .pde-tree-iconButton:hover:not(:disabled) {
   background: var(--color-surface-hover, #f4f5f6);
   color: var(--color-text-primary, #26282b);
+  border-color: var(--color-border-default, #e0e4e8);
 }
 
 .pde-tree-iconButton:active:not(:disabled) {
@@ -82,25 +121,28 @@
 }
 
 .pde-tree-iconButton:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: not-allowed;
 }
+
+/* -------------------------------------------------------------------------- */
+/* Tree container                                                             */
+/* -------------------------------------------------------------------------- */
 
 .pde-tree-treeContainer {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: var(--space-1, 4px) 0;
+  padding: 2px 0;
 }
 
 .pde-tree-treeContainer:focus {
   outline: none;
 }
 
-/* Custom scrollbar */
 .pde-tree-treeContainer::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 .pde-tree-treeContainer::-webkit-scrollbar-track {
@@ -109,21 +151,27 @@
 
 .pde-tree-treeContainer::-webkit-scrollbar-thumb {
   background: var(--color-border-default, #e0e4e8);
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
 .pde-tree-treeContainer::-webkit-scrollbar-thumb:hover {
   background: var(--color-border-strong, #ccd2d8);
 }
 
+/* -------------------------------------------------------------------------- */
+/* Node row                                                                   */
+/* -------------------------------------------------------------------------- */
+
 .pde-tree-nodeRow {
   display: flex;
   align-items: center;
-  gap: var(--space-1, 4px);
-  padding: 2px var(--space-2, 8px);
+  gap: 4px;
+  height: 24px;
+  padding: 0 8px;
   cursor: default;
   user-select: none;
   white-space: nowrap;
+  position: relative;
   transition: background var(--transition-fast, 140ms ease);
 }
 
@@ -132,11 +180,11 @@
 }
 
 .pde-tree-nodeRowSelected {
-  background: var(--color-surface-selected, #eef0f2);
+  background: var(--color-accent-bg, #fff8ef);
 }
 
 .pde-tree-nodeRowSelected:hover {
-  background: var(--color-surface-active, #e7eaed);
+  background: var(--color-accent-bg-soft, #fff3e5);
 }
 
 .pde-tree-branchControl {
@@ -147,12 +195,16 @@
   cursor: pointer;
 }
 
+/* -------------------------------------------------------------------------- */
+/* Expand chevron                                                             */
+/* -------------------------------------------------------------------------- */
+
 .pde-tree-expandIcon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   flex-shrink: 0;
   color: var(--color-text-tertiary, #989da5);
   transition: transform var(--transition-fast, 140ms ease);
@@ -163,9 +215,48 @@
 }
 
 .pde-tree-expandIconPlaceholder {
-  width: 16px;
+  width: 14px;
   flex-shrink: 0;
 }
+
+/* -------------------------------------------------------------------------- */
+/* Drag handle                                                                */
+/* -------------------------------------------------------------------------- */
+
+.pde-tree-dragHandle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--color-text-tertiary, #989da5);
+  cursor: grab;
+  opacity: 0;
+  transition: opacity var(--transition-fast, 140ms ease),
+    color var(--transition-fast, 140ms ease);
+}
+
+.pde-tree-dragHandle:hover {
+  color: var(--color-text-primary, #26282b);
+}
+
+.pde-tree-dragHandle:active {
+  cursor: grabbing;
+}
+
+.pde-tree-dragHandleDisabled {
+  cursor: not-allowed;
+  opacity: 0.25 !important;
+}
+
+.pde-tree-nodeRow:hover .pde-tree-dragHandle {
+  opacity: 1;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Node icon                                                                  */
+/* -------------------------------------------------------------------------- */
 
 .pde-tree-nodeIcon {
   display: inline-flex;
@@ -177,6 +268,10 @@
   color: var(--color-text-tertiary, #989da5);
 }
 
+/* -------------------------------------------------------------------------- */
+/* Node label                                                                 */
+/* -------------------------------------------------------------------------- */
+
 .pde-tree-nodeLabel {
   flex: 1;
   min-width: 0;
@@ -184,24 +279,38 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-weight: var(--font-weight-regular, 400);
+  font-size: var(--font-size-xs, 12px);
 }
 
 .pde-tree-nodeLabelBranch {
   font-weight: var(--font-weight-medium, 500);
 }
 
+.pde-tree-deprecatedLabel {
+  text-decoration: line-through;
+  color: var(--color-text-tertiary, #989da5);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Node suffix                                                                */
+/* -------------------------------------------------------------------------- */
+
 .pde-tree-nodeSuffix {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1, 4px);
+  gap: 4px;
   flex-shrink: 0;
 }
+
+/* -------------------------------------------------------------------------- */
+/* Method badge                                                               */
+/* -------------------------------------------------------------------------- */
 
 .pde-tree-methodBadge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 32px;
+  min-width: 30px;
   height: 16px;
   padding: 0 4px;
   font-size: 9px;
@@ -209,6 +318,7 @@
   letter-spacing: 0.3px;
   border-radius: var(--radius-xs, 3px);
   flex-shrink: 0;
+  font-family: var(--font-family-ui, Inter, ui-sans-serif, system-ui, sans-serif);
 }
 
 .pde-tree-methodGet {
@@ -241,10 +351,9 @@
   background: var(--color-surface-subtle, #f8f9fa);
 }
 
-.pde-tree-deprecatedLabel {
-  text-decoration: line-through;
-  color: var(--color-text-tertiary, #989da5);
-}
+/* -------------------------------------------------------------------------- */
+/* Required dot                                                               */
+/* -------------------------------------------------------------------------- */
 
 .pde-tree-requiredDot {
   width: 4px;
@@ -254,73 +363,40 @@
   flex-shrink: 0;
 }
 
+/* -------------------------------------------------------------------------- */
+/* Search highlight                                                           */
+/* -------------------------------------------------------------------------- */
+
 .pde-tree-highlight {
   background: var(--color-accent-bg, #fff8ef);
   color: var(--color-text-accent, #d97818);
   border-radius: 2px;
   padding: 0 1px;
+  font-weight: var(--font-weight-medium, 500);
 }
 
-.pde-tree-indentGuide {
-  width: 1px;
-  align-self: stretch;
-  background: var(--color-border-subtle, #eceff1);
-  margin-left: 7px;
-  flex-shrink: 0;
-}
+/* -------------------------------------------------------------------------- */
+/* Empty state                                                                */
+/* -------------------------------------------------------------------------- */
 
 .pde-tree-emptyState {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-6, 24px);
+  padding: 24px 16px;
   color: var(--color-text-tertiary, #989da5);
   font-size: var(--font-size-xs, 12px);
 }
 
 /* -------------------------------------------------------------------------- */
-/* Drag and drop                                                              */
+/* Drag and drop visual states                                                */
 /* -------------------------------------------------------------------------- */
 
-.pde-tree-dragHandle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
-  height: 16px;
-  flex-shrink: 0;
-  color: var(--color-text-tertiary, #989da5);
-  cursor: grab;
-  opacity: 0;
-  transition: opacity var(--transition-fast, 140ms ease),
-    color var(--transition-fast, 140ms ease);
-}
-
-.pde-tree-dragHandle:hover {
-  color: var(--color-text-primary, #26282b);
-}
-
-.pde-tree-dragHandle:active {
-  cursor: grabbing;
-}
-
-.pde-tree-dragHandleDisabled {
-  cursor: not-allowed;
-  opacity: 0.3 !important;
-}
-
-.pde-tree-nodeRow:hover .pde-tree-dragHandle {
-  opacity: 1;
-}
-
 .pde-tree-nodeDragging {
-  opacity: 0.4;
+  opacity: 0.35;
 }
 
-.pde-tree-dropIndicatorBefore {
-  position: relative;
-}
-
+/* Drop indicator: before (line above) */
 .pde-tree-dropIndicatorBefore::before {
   content: "";
   position: absolute;
@@ -331,12 +407,10 @@
   background: var(--color-accent, #f28c28);
   border-radius: 1px;
   pointer-events: none;
+  z-index: 2;
 }
 
-.pde-tree-dropIndicatorAfter {
-  position: relative;
-}
-
+/* Drop indicator: after (line below) */
 .pde-tree-dropIndicatorAfter::after {
   content: "";
   position: absolute;
@@ -347,4 +421,12 @@
   background: var(--color-accent, #f28c28);
   border-radius: 1px;
   pointer-events: none;
+  z-index: 2;
+}
+
+/* Drop indicator: child (highlight entire row as drop target) */
+.pde-tree-dropIndicatorChild {
+  background: var(--color-accent-bg, #fff8ef) !important;
+  box-shadow: inset 0 0 0 1px var(--color-accent, #f28c28);
+  border-radius: var(--radius-sm, 4px);
 }
