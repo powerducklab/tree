@@ -79,13 +79,18 @@ import {
   LuChevronRight,
   LuChevronsDown,
   LuChevronsUp,
+  LuCircle,
   LuEllipsisVertical,
   LuFile,
   LuFolder,
   LuFolderOpen,
   LuGripVertical,
+  LuHash,
+  LuList,
   LuRefreshCw,
   LuSearch,
+  LuToggleLeft,
+  LuType,
 } from "react-icons/lu";
 
 /* -------------------------------------------------------------------------- */
@@ -407,6 +412,18 @@ function NodeRenderer<TMetadata>(props: NodeRendererProps<TMetadata>) {
     <span className={styles.nodeIcon}>
       {nodeKind === "schema" || nodeKind === "component" ? (
         <LuBraces size={14} />
+      ) : nodeKind === "object" ? (
+        <LuBraces size={14} />
+      ) : nodeKind === "array" || nodeKind === "items" ? (
+        <LuList size={14} />
+      ) : nodeKind === "string" ? (
+        <LuType size={14} />
+      ) : nodeKind === "number" || nodeKind === "integer" ? (
+        <LuHash size={14} />
+      ) : nodeKind === "boolean" ? (
+        <LuToggleLeft size={14} />
+      ) : nodeKind === "property" || nodeKind === "null" || nodeKind === "unknown" ? (
+        <LuCircle size={10} />
       ) : isBranch ? (
         isExpanded ? (
           <LuFolderOpen size={14} />

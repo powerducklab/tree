@@ -666,11 +666,11 @@
 }
 
 .pde-tree-variant-doc .pde-tree-methodBadge {
-  font-size: 9px;
-  font-weight: var(--font-weight-medium, 500);
-  background: transparent;
-  padding: 0;
-  min-width: auto;
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold, 600);
+  width: 40px;
+  height: 18px;
+  margin-right: 6px;
 }
 
 /* Doc variant: subtler indent guides */

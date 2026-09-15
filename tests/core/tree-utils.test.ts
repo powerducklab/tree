@@ -639,3 +639,164 @@ describe("edge cases", () => {
     expect(a?.children?.some((n) => n.id === "a1")).toBe(false);
   });
 });
+
+/* -------------------------------------------------------------------------- */
+/* Comprehensive edge cases                                                    */
+/* -------------------------------------------------------------------------- */
+
+describe("comprehensive edge cases", () => {
+  it("moveNode returns null when moving a node into itself", () => {
+    const result = moveNode(sampleTree, "a", "a");
+    expect(result).toBeNull();
+  });
+
+  it("moveNode returns null when source and target are the same leaf", () => {
+    const result = moveNode(sampleTree, "a1", "a1");
+    expect(result).toBeNull();
+  });
+
+  it("moveNode preserves moved node's children subtree", () => {
+    /* b has child b1, b1 has child b1a. Move b into a. */
+    const result = moveNode(sampleTree, "b", "a");
+    const a = result?.find((n) => n.id === "a");
+    const movedB = a?.children?.find((n) => n.id === "b");
+
+    expect(movedB).toBeDefined();
+    expect(movedB?.children?.[0]?.id).toBe("b1");
+    expect(movedB?.children?.[0]?.children?.[0]?.id).toBe("b1a");
+  });
+
+  it("moveNode to root at index 0 places node first", () => {
+    const result = moveNode(sampleTree, "c", null, 0);
+    expect(result?.[0]?.id).toBe("c");
+  });
+
+  it("moveNode clamps negative target index to 0", () => {
+    const result = moveNode(sampleTree, "a1", "b", -5);
+    const beta = result?.find((n) => n.id === "b");
+    expect(beta?.children?.[0]?.id).toBe("a1");
+  });
+
+  it("reorderNode returns original tree when fromIndex equals toIndex", () => {
+    const result = reorderNode(sampleTree, "a", 0);
+    expect(result?.nodes).toBe(sampleTree);
+    expect(result?.fromIndex).toBe(result?.toIndex);
+  });
+
+  it("reorderNode works on deeply nested children", () => {
+    /* b1 has child b1a. Reorder b1a within b1. */
+    const treeWithTwo = insertChild(sampleTree, "b1", { id: "b1b", name: "B1B" });
+    const result = reorderNode(treeWithTwo, "b1a", 1);
+
+    const b1 = findNode(result?.nodes ?? [], "b1");
+    expect(b1?.children?.map((n) => n.id)).toEqual(["b1b", "b1a"]);
+  });
+
+  it("findPath returns null for non-existent node", () => {
+    expect(findPath(sampleTree, "non-existent")).toBeNull();
+  });
+
+  it("findPath returns empty ancestors for root-level node", () => {
+    const path = findPath(sampleTree, "a");
+    expect(path?.ancestorIds).toEqual([]);
+    expect(path?.parent).toBeUndefined();
+  });
+
+  it("getLeaves returns only leaf nodes (no children)", () => {
+    const leaves = getLeaves(sampleTree);
+    const leafIds = leaves.map((n) => n.id);
+    /* a1, a2, b1a, c are leaves. b, b1 are branches. */
+    expect(leafIds).toContain("a1");
+    expect(leafIds).toContain("a2");
+    expect(leafIds).toContain("b1a");
+    expect(leafIds).toContain("c");
+    expect(leafIds).not.toContain("b");
+    expect(leafIds).not.toContain("b1");
+  });
+
+  it("getBranchIds returns only branch nodes (has children)", () => {
+    const branches = getBranchIds(sampleTree);
+    expect(branches).toContain("a");
+    expect(branches).toContain("b");
+    expect(branches).toContain("b1");
+    expect(branches).not.toContain("a1");
+    expect(branches).not.toContain("c");
+  });
+
+  it("flattenTree returns all nodes in depth-first order", () => {
+    const flat = flattenTree(sampleTree);
+    expect(flat.length).toBe(countNodes(sampleTree));
+    /* First node should be root-level 'a'. */
+    expect(flat[0]?.node.id).toBe("a");
+    /* Each entry has node and depth. */
+    expect(flat[0]?.depth).toBe(1);
+  });
+
+  it("handles node with empty children array as leaf", () => {
+    const tree: TreeNode[] = [{ id: "empty", name: "Empty", children: [] }];
+    expect(getLeaves(tree)).toHaveLength(1);
+    expect(getBranchIds(tree)).toHaveLength(0);
+    expect(getMaxDepth(tree)).toBe(1);
+  });
+
+  it("handles node with undefined children as leaf", () => {
+    const tree: TreeNode[] = [{ id: "n", name: "N" }];
+    expect(getLeaves(tree)).toHaveLength(1);
+    expect(getMaxDepth(tree)).toBe(1);
+  });
+
+  it("removeNode returns original tree for non-existent id", () => {
+    const result = removeNode(sampleTree, "non-existent");
+    expect(result).toBe(sampleTree);
+  });
+
+  it("removeNode removes a deeply nested node", () => {
+    const result = removeNode(sampleTree, "b1a");
+    const b1 = findNode(result, "b1");
+    expect(b1?.children).toHaveLength(0);
+  });
+
+  it("handles large flat tree (1000 nodes) without stack overflow", () => {
+    const large: TreeNode[] = Array.from({ length: 1000 }, (_, i) => ({
+      id: `n${i}`,
+      name: `Node ${i}`,
+    }));
+
+    expect(countNodes(large)).toBe(1000);
+    expect(findNode(large, "n999")?.id).toBe("n999");
+    expect(getMaxDepth(large)).toBe(1);
+    expect(flattenTree(large)).toHaveLength(1000);
+  });
+
+  it("handles very deep tree (depth 100) without stack overflow", () => {
+    let deep: TreeNode[] = [{ id: "leaf", name: "Leaf" }];
+    for (let i = 0; i < 100; i++) {
+      deep = [{ id: `depth${i}`, name: `Depth ${i}`, children: deep }];
+    }
+
+    expect(getMaxDepth(deep)).toBe(101);
+    expect(findNode(deep, "leaf")?.id).toBe("leaf");
+    expect(countNodes(deep)).toBe(101);
+  });
+
+  it("sortNodes sorts alphabetically by name when no order field", () => {
+    const unsorted: TreeNode[] = [
+      { id: "b", name: "B" },
+      { id: "a", name: "A" },
+      { id: "c", name: "C" },
+    ];
+    const sorted = sortNodes(unsorted);
+    /* Without order field, sorts by name alphabetically. */
+    expect(sorted.map((n) => n.id)).toEqual(["a", "b", "c"]);
+  });
+
+  it("sortNodes uses order field when present", () => {
+    const unsorted: TreeNode[] = [
+      { id: "b", name: "B", order: 2 },
+      { id: "a", name: "A", order: 0 },
+      { id: "c", name: "C", order: 1 },
+    ];
+    const sorted = sortNodes(unsorted);
+    expect(sorted.map((n) => n.id)).toEqual(["a", "c", "b"]);
+  });
+});
