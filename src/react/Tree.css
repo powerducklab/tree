@@ -571,18 +571,18 @@
 }
 
 .pde-tree-contextMenuItemConfirming {
-  background: var(--color-danger, #c95555);
-  color: var(--color-text-inverse, #ffffff);
+  background: var(--color-danger-soft, #fff2f1);
+  color: var(--color-danger, #c95555);
   font-weight: var(--font-weight-semibold, 600);
 }
 
 .pde-tree-contextMenuItemConfirming:hover:not(:disabled) {
-  background: var(--color-danger, #c95555);
-  color: var(--color-text-inverse, #ffffff);
+  background: var(--color-danger-soft, #fff2f1);
+  color: var(--color-danger, #c95555);
 }
 
 .pde-tree-contextMenuItemConfirming .pde-tree-contextMenuIcon {
-  color: var(--color-text-inverse, #ffffff);
+  color: var(--color-danger, #c95555);
 }
 
 .pde-tree-contextMenuItem:focus {
