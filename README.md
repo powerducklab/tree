@@ -9,6 +9,7 @@ Extensible tree component for API navigation, schema exploration, and documentat
 - **JSON Schema adapter** — deep expansion of nested properties, arrays, combinators with `jsonPath` metadata for editor line jumping
 - **Doc adapter** — Stripe-style documentation tree with parameters, request body, and responses
 - **React component** — search, expand/collapse, keyboard navigation, method badges, custom render props
+- **Drag and drop reordering** — reorder nodes within the same parent with visual drop indicators, `canDrag`/`canDrop` predicates, and `onReorder` callback
 - **CSS variable theming** — compatible with powerduck `tokens.css`, light/dark mode
 - **Zero hard dependencies** — core and adapters have no runtime dependencies; React layer requires `react` and `react-dom`
 
@@ -112,6 +113,60 @@ function FileTree() {
   return <Tree nodes={files} searchable defaultExpandDepth={1} />;
 }
 ```
+
+## Drag and Drop Reordering
+
+Enable drag and drop with the `draggable` prop. Nodes can be reordered within the same parent by dragging the grip handle.
+
+```tsx
+import { useState } from "react";
+import { Tree } from "@powerduck/tree/react";
+import type { ReorderResult } from "@powerduck/tree/core";
+
+function SortableTree({ initialNodes }) {
+  const [nodes, setNodes] = useState(initialNodes);
+
+  const handleReorder = (result: ReorderResult) => {
+    console.log(`Moved "${result.moved.name}" from index ${result.fromIndex} to ${result.toIndex}`);
+    setNodes(result.nodes);
+  };
+
+  return (
+    <Tree
+      nodes={nodes}
+      draggable
+      onReorder={handleReorder}
+    />
+  );
+}
+```
+
+### Control which nodes can be dragged
+
+```tsx
+<Tree
+  nodes={nodes}
+  draggable
+  canDrag={(node) => node.metadata?.type !== "folder"}
+  onReorder={handleReorder}
+/>
+```
+
+### Control where nodes can be dropped
+
+```tsx
+<Tree
+  nodes={nodes}
+  draggable
+  canDrop={(dragged, target, position) => {
+    /* Only allow dropping after nodes, not before */
+    return position === "after";
+  }}
+  onReorder={handleReorder}
+/>
+```
+
+The `onReorder` callback receives a `ReorderResult` containing the new tree, the moved node, parent ID, and from/to indices. Use `reorderNode` and `moveNode` from the core for programmatic reordering.
 
 ## API Reference
 
@@ -232,6 +287,10 @@ Builds a Stripe-style documentation tree where each operation expands to show pa
 | `size` | `"xs" \| "sm" \| "md"` | `"sm"` | Size variant |
 | `showIndentGuides` | `boolean` | `true` | Show indent guide lines |
 | `maxHeight` | `number \| string` | — | Max height before scrolling |
+| `draggable` | `boolean` | `false` | Enable drag and drop reordering |
+| `onReorder` | `(result: ReorderResult) => void` | — | Called when a node is reordered |
+| `canDrag` | `(node) => boolean` | — | Predicate to control which nodes can be dragged |
+| `canDrop` | `(dragged, target, position) => boolean` | — | Predicate to control allowed drop targets |
 
 #### Tree Handle (via ref)
 
