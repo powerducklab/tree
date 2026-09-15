@@ -1,5 +1,6 @@
 import {
   forwardRef,
+  memo,
   useCallback,
   useEffect,
   useImperativeHandle,
@@ -296,6 +297,10 @@ interface NodeRendererProps<TMetadata> {
   depth: number;
   expandedIds: string[];
   selectedId: string | null;
+  /** Derived: whether this node is expanded (for React.memo comparison). */
+  isExpanded: boolean;
+  /** Derived: whether this node is selected (for React.memo comparison). */
+  isSelected: boolean;
   onToggle: (id: string) => void;
   onSelect: (node: TreeNode<TMetadata>) => void;
   onNodeRef: (id: string, element: HTMLElement | null) => void;
@@ -322,7 +327,69 @@ interface NodeRendererProps<TMetadata> {
   onMoreClick: (node: TreeNode<TMetadata>, event: React.MouseEvent) => void;
 }
 
-function NodeRenderer<TMetadata>(props: NodeRendererProps<TMetadata>) {
+/**
+ * Custom equality check for React.memo.
+ *
+ * Ignores `expandedIds`, `selectedId`, and `dragState` (which change
+ * frequently and are shared across all nodes) in favor of the derived
+ * per-node booleans `isExpanded`, `isSelected`, and drag-involvement checks.
+ * This prevents full-tree re-renders on every expand/select/drag-over event.
+ */
+function areNodePropsEqual<TMetadata>(
+  prev: NodeRendererProps<TMetadata>,
+  next: NodeRendererProps<TMetadata>,
+): boolean {
+  if (prev.node !== next.node) return false;
+  if (prev.depth !== next.depth) return false;
+  if (prev.isExpanded !== next.isExpanded) return false;
+  if (prev.isSelected !== next.isSelected) return false;
+  if (prev.searchQuery !== next.searchQuery) return false;
+  if (prev.showIndentGuides !== next.showIndentGuides) return false;
+  if (prev.canDragNode !== next.canDragNode) return false;
+  if (prev.draggable !== next.draggable) return false;
+  if (prev.showContextMenuButton !== next.showContextMenuButton) return false;
+  if (prev.activeMenuNodeId !== next.activeMenuNodeId) return false;
+
+  /* Drag-derived state: only re-render if this node is involved. */
+  const prevDragging = prev.dragState.draggedId === prev.node.id;
+  const nextDragging = next.dragState.draggedId === next.node.id;
+  if (prevDragging !== nextDragging) return false;
+
+  const prevDragOver = prev.dragState.dragOverId === prev.node.id;
+  const nextDragOver = next.dragState.dragOverId === next.node.id;
+  if (prevDragOver !== nextDragOver) return false;
+  if (
+    prevDragOver &&
+    nextDragOver &&
+    prev.dragState.dragOverPosition !== next.dragState.dragOverPosition
+  ) {
+    return false;
+  }
+
+  /* Render props: compare references (consumer should memoize). */
+  if (prev.renderIcon !== next.renderIcon) return false;
+  if (prev.renderLabel !== next.renderLabel) return false;
+  if (prev.renderSuffix !== next.renderSuffix) return false;
+  if (prev.renderNode !== next.renderNode) return false;
+
+  /* Callbacks: should be stable via useCallback. */
+  if (prev.onToggle !== next.onToggle) return false;
+  if (prev.onSelect !== next.onSelect) return false;
+  if (prev.onNodeRef !== next.onNodeRef) return false;
+  if (prev.canDragNodeFn !== next.canDragNodeFn) return false;
+  if (prev.onDragStart !== next.onDragStart) return false;
+  if (prev.onDragOver !== next.onDragOver) return false;
+  if (prev.onDragLeave !== next.onDragLeave) return false;
+  if (prev.onDrop !== next.onDrop) return false;
+  if (prev.onDragEnd !== next.onDragEnd) return false;
+  if (prev.onContextMenu !== next.onContextMenu) return false;
+  if (prev.onMoreClick !== next.onMoreClick) return false;
+
+  /* expandedIds, selectedId, dragState intentionally ignored — captured above. */
+  return true;
+}
+
+function NodeRendererInner<TMetadata>(props: NodeRendererProps<TMetadata>) {
   const {
     node,
     depth,
@@ -538,12 +605,19 @@ function NodeRenderer<TMetadata>(props: NodeRendererProps<TMetadata>) {
           {...props}
           node={child}
           depth={depth + 1}
+          isExpanded={expandedIds.includes(child.id)}
+          isSelected={selectedId === child.id}
           canDragNode={canDragNodeFn(child)}
         />
       ))}
     </div>
   );
 }
+
+/* Memoized with custom equality to prevent full-tree re-renders on every
+   expand/select/drag-over event. Only nodes whose derived state changes
+   (isExpanded, isSelected, drag-involvement) will re-render. */
+const NodeRenderer = memo(NodeRendererInner, areNodePropsEqual) as typeof NodeRendererInner;
 
 /* -------------------------------------------------------------------------- */
 /* Main component                                                             */
@@ -1106,6 +1180,8 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
               depth={0}
               expandedIds={visibleExpandedIds}
               selectedId={selectedId}
+              isExpanded={visibleExpandedIds.includes(node.id)}
+              isSelected={selectedId === node.id}
               onToggle={expansion.toggleNode}
               onSelect={handleSelect}
               onNodeRef={expansion.setNodeElementRef}
