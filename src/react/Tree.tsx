@@ -488,11 +488,12 @@ function NodeRenderer<TMetadata>(props: NodeRendererProps<TMetadata>) {
       onDrop={draggable ? (event) => onDrop(node, event) : undefined}
     >
       {showIndentGuides &&
-        Array.from({ length: depth }, (_, i) => (
+        depth > 1 &&
+        Array.from({ length: depth - 1 }, (_, i) => (
           <span
             key={`guide-${i}`}
             className={styles.indentGuide}
-            style={{ left: `${(i + 1) * 16}px` }}
+            style={{ left: `${(i + 2) * 16}px` }}
           />
         ))}
       {draggable && (
@@ -584,6 +585,7 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
     maxHeight,
     rootRef,
     draggable = false,
+    dragGroupKey,
     onReorder,
     onMove,
     canDrag,
@@ -700,6 +702,36 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
           const isDescendant = draggedPath.ancestorIds.includes(node.id);
 
           if (isDescendant) {
+            return;
+          }
+        }
+      }
+
+      /* Drag group isolation: nodes from different groups cannot intermix. */
+      if (dragGroupKey) {
+        const draggedPath = findPath(nodes, dragState.draggedId);
+        const targetPath = findPath(nodes, node.id);
+
+        if (draggedPath && targetPath) {
+          const resolveGroup = (path: typeof draggedPath): unknown => {
+            const allNodes = [...path.nodes].reverse();
+            for (const n of allNodes) {
+              const meta = n.metadata as Record<string, unknown> | undefined;
+              if (meta && dragGroupKey in meta) {
+                return meta[dragGroupKey];
+              }
+            }
+            return undefined;
+          };
+
+          const draggedGroup = resolveGroup(draggedPath);
+          const targetGroup = resolveGroup(targetPath);
+
+          if (
+            draggedGroup !== undefined &&
+            targetGroup !== undefined &&
+            draggedGroup !== targetGroup
+          ) {
             return;
           }
         }

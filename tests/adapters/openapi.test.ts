@@ -537,4 +537,23 @@ describe("openapi adapter edge cases", () => {
 
     expect(result.root.children?.length).toBeGreaterThan(0);
   });
+
+  it("APIs and Components sections carry section metadata for drag isolation", () => {
+    const result = buildOpenApiTree({
+      openapi: "3.1.0",
+      info: { title: "Test", version: "1.0.0" },
+      paths: { "/test": { get: { summary: "Test" } } },
+      components: {
+        schemas: {
+          User: { type: "object", properties: { id: { type: "integer" } } },
+        },
+      },
+    });
+
+    const apisSection = result.root.children?.find((n) => n.id === "section:apis");
+    const componentsSection = result.root.children?.find((n) => n.id === "section:components");
+
+    expect(apisSection?.metadata?.section).toBe("apis");
+    expect(componentsSection?.metadata?.section).toBe("components");
+  });
 });

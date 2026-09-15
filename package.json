@@ -1,6 +1,6 @@
 {
   "name": "@powerduck/tree",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Extensible tree component for API navigation, schema exploration, and documentation. Supports OpenAPI 3.2 nested tags, x-tagGroups, and custom data sources.",
   "license": "MIT",
   "author": "powerduck",

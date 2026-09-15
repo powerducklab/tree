@@ -25,6 +25,8 @@ export interface OpenApiNodeMetadata {
   source?: "tag" | "tag-group" | "oas32-parent" | "fallback" | "section";
   /** Node kind for icon selection. */
   kind?: OpenApiNodeKind;
+  /** Drag group isolation key (e.g. "apis", "components", "webhooks"). */
+  section?: string;
 }
 
 export type OpenApiNodeKind =
@@ -699,6 +701,7 @@ function buildComponentsSection(
     metadata: {
       source: "tag",
       kind: "component",
+      section: "components",
     },
   };
 }
@@ -768,6 +771,7 @@ function buildWebhooksSection(
     metadata: {
       source: "tag",
       kind: "webhook",
+      section: "webhooks",
     },
   };
 }
@@ -850,7 +854,7 @@ export function buildOpenApiTree(
     id: "section:apis",
     name: "APIs",
     children: navigationChildren,
-    metadata: { kind: "section", source: "section" },
+    metadata: { kind: "section", source: "section", section: "apis" },
     order: 0,
   };
 

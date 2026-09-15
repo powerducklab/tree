@@ -481,4 +481,50 @@ describe("json-schema adapter edge cases", () => {
     const statusNode = result.root.children?.find((n) => n.name === "status");
     expect(statusNode?.metadata?.kind).toBe("enum");
   });
+
+  it("orders OAS top-level fields by convention (openapi before components)", () => {
+    const oasSchema = {
+      type: "object",
+      properties: {
+        components: { type: "object" },
+        openapi: { type: "string" },
+        paths: { type: "object" },
+        info: { type: "object" },
+        servers: { type: "array" },
+        tags: { type: "array" },
+        security: { type: "array" },
+        externalDocs: { type: "object" },
+      },
+    };
+
+    const result = buildSchemaTree(oasSchema);
+    const names = result.root.children?.map((n) => n.name) ?? [];
+
+    expect(names[0]).toBe("openapi");
+    expect(names[1]).toBe("info");
+    expect(names[2]).toBe("servers");
+    expect(names[3]).toBe("paths");
+    expect(names[4]).toBe("components");
+    expect(names[5]).toBe("security");
+    expect(names[6]).toBe("tags");
+    expect(names[7]).toBe("externalDocs");
+  });
+
+  it("unknown fields sort alphabetically after known fields", () => {
+    const schema = {
+      type: "object",
+      properties: {
+        zeta: { type: "string" },
+        openapi: { type: "string" },
+        alpha: { type: "string" },
+      },
+    };
+
+    const result = buildSchemaTree(schema);
+    const names = result.root.children?.map((n) => n.name) ?? [];
+
+    expect(names[0]).toBe("openapi");
+    expect(names[1]).toBe("alpha");
+    expect(names[2]).toBe("zeta");
+  });
 });

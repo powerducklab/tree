@@ -134,6 +134,10 @@ export interface TreeProps<TMetadata = unknown> {
   /** Enable drag and drop reordering. Default false. */
   draggable?: boolean;
 
+  /** Metadata key for drag group isolation. When set, nodes with different
+   * group values cannot be dragged into each other's sections. */
+  dragGroupKey?: string;
+
   /** Called when a node is reordered via drag and drop. */
   onReorder?: (result: ReorderResult<TMetadata>) => void;
 

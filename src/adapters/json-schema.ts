@@ -2,6 +2,25 @@ import type { TreeNode } from "../core/types";
 import { sortNodes } from "../core/tree-utils";
 
 /* -------------------------------------------------------------------------- */
+/* Constants                                                                  */
+/* -------------------------------------------------------------------------- */
+
+/** Conventional field order for OAS / JSON Schema documents.
+ * Known fields appear first in this order; unknown fields follow alphabetically. */
+const FIELD_ORDER: Record<string, number> = {
+  openapi: 0,
+  info: 1,
+  servers: 2,
+  paths: 3,
+  webhooks: 4,
+  components: 5,
+  security: 6,
+  tags: 7,
+  externalDocs: 8,
+  jsonSchemaDialect: 9,
+};
+
+/* -------------------------------------------------------------------------- */
 /* Types                                                                      */
 /* -------------------------------------------------------------------------- */
 
@@ -380,6 +399,7 @@ function buildSchemaNode(
   return {
     id: jsonPath.join(".") || "root",
     name,
+    order: FIELD_ORDER[name],
     metadata: {
       ...baseMetadata,
       isLeaf,
