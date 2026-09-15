@@ -696,29 +696,24 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
         position = relativeY < 0.5 ? "before" : "after";
       }
 
+      /* Resolve dragged path once and reuse for all checks. */
+      const draggedPath = dragState.draggedId ? findPath(nodes, dragState.draggedId) : null;
+
       /* Prevent dropping into own descendant (circular reference). */
-      if (position === "child") {
-        const draggedPath = findPath(nodes, dragState.draggedId);
-
-        if (draggedPath) {
-          const isDescendant = draggedPath.ancestorIds.includes(node.id);
-
-          if (isDescendant) {
-            return;
-          }
+      if (position === "child" && draggedPath) {
+        if (draggedPath.ancestorIds.includes(node.id)) {
+          return;
         }
       }
 
       /* Drag group isolation: nodes from different groups cannot intermix. */
-      if (dragGroupKey) {
-        const draggedPath = findPath(nodes, dragState.draggedId);
+      if (dragGroupKey && draggedPath) {
         const targetPath = findPath(nodes, node.id);
 
-        if (draggedPath && targetPath) {
+        if (targetPath) {
           const resolveGroup = (path: typeof draggedPath): unknown => {
-            const allNodes = [...path.nodes].reverse();
-            for (const n of allNodes) {
-              const meta = n.metadata as Record<string, unknown> | undefined;
+            for (let i = path.nodes.length - 1; i >= 0; i--) {
+              const meta = path.nodes[i]?.metadata as Record<string, unknown> | undefined;
               if (meta && dragGroupKey in meta) {
                 return meta[dragGroupKey];
               }
@@ -741,7 +736,6 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
 
       /* Check canDrop predicate if provided. */
       if (canDrop) {
-        const draggedPath = findPath(nodes, dragState.draggedId);
         const draggedNode = draggedPath?.target;
 
         if (!draggedNode || !canDrop(draggedNode, node, position)) {
