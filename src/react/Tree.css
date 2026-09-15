@@ -331,6 +331,21 @@
   flex-shrink: 0;
 }
 
+/* Operation count badge (right-aligned, subtle pill) */
+.pde-tree-countBadge {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--color-text-tertiary, #989da5);
+  background: var(--color-surface-subtle, #f8f9fa);
+  border: 1px solid var(--color-border-subtle, #eceff1);
+  border-radius: var(--radius-full, 9999px);
+  padding: 1px 7px;
+  line-height: 16px;
+  min-width: 20px;
+  text-align: center;
+}
+
 /* -------------------------------------------------------------------------- */
 /* Method badge                                                               */
 /* -------------------------------------------------------------------------- */

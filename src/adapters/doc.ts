@@ -35,6 +35,8 @@ export interface DocNodeMetadata {
   kind?: DocNodeKind;
   /** Source of the navigation grouping. */
   source?: "tag" | "tag-group" | "oas32-parent" | "fallback";
+  /** Number of operations in this node's subtree (for count badges). */
+  operationCount?: number;
 }
 
 export type DocNodeKind =
@@ -891,6 +893,27 @@ function buildComponentsSection(
  *
  * Supported extensions: x-order, x-displayName, x-internal, x-scalar-ignore.
  */
+/**
+ * Recursively counts operation nodes in each subtree and attaches
+ * `metadata.operationCount` to every node for display badges.
+ */
+function addOperationCounts(nodes: DocTreeNode[]): DocTreeNode[] {
+  return nodes.map((node) => {
+    const children = node.children ? addOperationCounts(node.children) : undefined;
+    const ownCount = node.metadata?.kind === "operation" ? 1 : 0;
+    const childCount = children?.reduce((sum, child) => sum + (child.metadata?.operationCount ?? 0), 0) ?? 0;
+
+    return {
+      ...node,
+      children,
+      metadata: {
+        ...node.metadata,
+        operationCount: ownCount + childCount,
+      },
+    };
+  });
+}
+
 export function buildDocTree(
   document: Oas32Document | Record<string, unknown> | null | undefined,
   options: DocTreeOptions = {},
@@ -944,10 +967,10 @@ export function buildDocTree(
 
   const componentsSection = buildComponentsSection(doc, resolvedOptions);
 
-  const allChildren = [
+  const allChildren = addOperationCounts([
     ...navigationChildren,
     ...(componentsSection ? [componentsSection] : []),
-  ];
+  ]);
 
   return {
     root: {

@@ -828,7 +828,7 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
       let toIndex = position === "before" ? targetIndex : targetIndex + 1;
       const draggedPath = findPath(nodes, draggedId);
       const targetParentId = targetPath.parent?.id ?? null;
-      const isCrossParent = draggedPath?.parent?.id ?? null !== targetParentId;
+      const isCrossParent = (draggedPath?.parent?.id ?? null) !== targetParentId;
 
       if (isCrossParent) {
         /* Cross-directory move: move to target's parent at the calculated index. */
