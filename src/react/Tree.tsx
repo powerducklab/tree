@@ -330,10 +330,15 @@ interface NodeRendererProps<TMetadata> {
 /**
  * Custom equality check for React.memo.
  *
- * Ignores `expandedIds`, `selectedId`, and `dragState` (which change
- * frequently and are shared across all nodes) in favor of the derived
- * per-node booleans `isExpanded`, `isSelected`, and drag-involvement checks.
- * This prevents full-tree re-renders on every expand/select/drag-over event.
+ * Branch nodes (with children) must re-render whenever shared mutable state
+ * (expandedIds, selectedId, dragState) changes reference, because they
+ * recompute their children's derived props (isExpanded, isSelected, etc.)
+ * during render. Skipping a branch node's re-render would freeze its
+ * subtree with stale shared state.
+ *
+ * Leaf nodes (no children) only depend on their own derived booleans, so
+ * they can safely skip re-render when shared state changes but their own
+ * state is unaffected.
  */
 function areNodePropsEqual<TMetadata>(
   prev: NodeRendererProps<TMetadata>,
@@ -349,6 +354,15 @@ function areNodePropsEqual<TMetadata>(
   if (prev.draggable !== next.draggable) return false;
   if (prev.showContextMenuButton !== next.showContextMenuButton) return false;
   if (prev.activeMenuNodeId !== next.activeMenuNodeId) return false;
+
+  /* Branch nodes: must re-render if shared state reference changed,
+     because they pass these down to children during render. */
+  const hasChildren = (prev.node.children?.length ?? 0) > 0;
+  if (hasChildren) {
+    if (prev.expandedIds !== next.expandedIds) return false;
+    if (prev.selectedId !== next.selectedId) return false;
+    if (prev.dragState !== next.dragState) return false;
+  }
 
   /* Drag-derived state: only re-render if this node is involved. */
   const prevDragging = prev.dragState.draggedId === prev.node.id;
@@ -385,7 +399,6 @@ function areNodePropsEqual<TMetadata>(
   if (prev.onContextMenu !== next.onContextMenu) return false;
   if (prev.onMoreClick !== next.onMoreClick) return false;
 
-  /* expandedIds, selectedId, dragState intentionally ignored — captured above. */
   return true;
 }
 
