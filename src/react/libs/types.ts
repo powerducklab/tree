@@ -77,6 +77,12 @@ export interface TreeProps<TMetadata = unknown> {
   /** Show expand/collapse all buttons in the toolbar. Default false. */
   showExpandAll?: boolean;
 
+  /** Show refresh button in the toolbar. When clicked, calls onRefresh. Default false. */
+  showRefresh?: boolean;
+
+  /** Called when the refresh button is clicked. Use to reload/rebuild the tree data. */
+  onRefresh?: () => void;
+
   /** Custom toolbar content rendered above the tree. */
   toolbar?: ReactNode;
 

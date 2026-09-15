@@ -662,6 +662,162 @@ function buildFlatTagDocTree(
 }
 
 /* -------------------------------------------------------------------------- */
+/* x-tagGroups navigation                                                      */
+/* -------------------------------------------------------------------------- */
+
+interface TagGroup {
+  name: string;
+  tags?: string[];
+  groups?: TagGroup[];
+}
+
+function hasTagGroups(document: JsonRecord): boolean {
+  return Array.isArray(document["x-tagGroups"]) && document["x-tagGroups"].length > 0;
+}
+
+function parseTagGroups(raw: unknown): TagGroup[] {
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  const groups: TagGroup[] = [];
+
+  for (const item of raw) {
+    const record = asRecord(item);
+
+    if (!record || typeof record.name !== "string") {
+      continue;
+    }
+
+    const group: TagGroup = { name: record.name };
+
+    if (Array.isArray(record.tags)) {
+      group.tags = record.tags.filter((t): t is string => typeof t === "string");
+    }
+
+    if (Array.isArray(record.groups)) {
+      group.groups = parseTagGroups(record.groups);
+    }
+
+    groups.push(group);
+  }
+
+  return groups;
+}
+
+function buildTagGroupDocTree(
+  group: TagGroup,
+  operationsByTag: Map<string, ParsedDocOperation[]>,
+  displayNames: Map<string, string>,
+  tagOrder: Map<string, number>,
+  options: Required<DocTreeOptions>,
+  depth = 0,
+): DocTreeNode {
+  const children: DocTreeNode[] = [];
+
+  /* Direct tags in this group. */
+  if (group.tags) {
+    for (const tag of group.tags) {
+      const tagOperations = operationsByTag.get(tag);
+
+      if (!tagOperations || tagOperations.length === 0) {
+        continue;
+      }
+
+      const operationNodes = tagOperations.map((operation) =>
+        buildDocOperationNode(operation, options, "tag-group", tag),
+      );
+
+      children.push({
+        id: `tag:${tag}`,
+        name: displayNames.get(tag) ?? tag,
+        order: tagOrder.get(tag),
+        children: sortNodes(operationNodes),
+        metadata: { source: "tag-group", kind: "tag" },
+      });
+    }
+  }
+
+  /* Nested sub-groups. */
+  if (group.groups) {
+    for (const subGroup of group.groups) {
+      children.push(
+        buildTagGroupDocTree(
+          subGroup,
+          operationsByTag,
+          displayNames,
+          tagOrder,
+          options,
+          depth + 1,
+        ),
+      );
+    }
+  }
+
+  return {
+    id: `tag-group:${group.name}`,
+    name: group.name,
+    order: depth * 1000,
+    children: sortNodes(children),
+    metadata: { source: "tag-group", kind: "tag-group" },
+  };
+}
+
+function buildTagGroupNavigation(
+  document: JsonRecord,
+  definitions: TagDefinition[],
+  operations: ParsedDocOperation[],
+  options: Required<DocTreeOptions>,
+): DocTreeNode[] {
+  const operationsByTag = new Map<string, ParsedDocOperation[]>();
+  const tagOrder = new Map<string, number>();
+  const displayNames = new Map<string, string>();
+
+  for (let index = 0; index < definitions.length; index += 1) {
+    tagOrder.set(definitions[index]!.name, index);
+    displayNames.set(definitions[index]!.name, definitions[index]!.displayName);
+  }
+
+  for (const operation of operations) {
+    if (isHidden(operation.raw, options.showInternal)) {
+      continue;
+    }
+
+    const tags = operation.tags.length > 0 ? operation.tags : ["Other"];
+
+    for (const tag of tags) {
+      const existing = operationsByTag.get(tag) ?? [];
+      existing.push(operation);
+      operationsByTag.set(tag, existing);
+    }
+  }
+
+  const groups = parseTagGroups(document["x-tagGroups"]);
+  const nodes = groups.map((group) =>
+    buildTagGroupDocTree(group, operationsByTag, displayNames, tagOrder, options),
+  );
+
+  /* Add untagged operations to "Other" at the end. */
+  const otherOperations = operationsByTag.get("Other");
+
+  if (otherOperations && otherOperations.length > 0) {
+    const operationNodes = otherOperations.map((operation) =>
+      buildDocOperationNode(operation, options, "fallback", "Other"),
+    );
+
+    nodes.push({
+      id: "tag:Other",
+      name: "Other",
+      order: Number.MAX_SAFE_INTEGER,
+      children: sortNodes(operationNodes),
+      metadata: { source: "fallback", kind: "tag" },
+    });
+  }
+
+  return sortNodes(nodes);
+}
+
+/* -------------------------------------------------------------------------- */
 /* Components and webhooks                                                    */
 /* -------------------------------------------------------------------------- */
 
@@ -770,6 +926,13 @@ export function buildDocTree(
       operations,
       resolvedOptions,
       warnings,
+    );
+  } else if (hasTagGroups(doc)) {
+    navigationChildren = buildTagGroupNavigation(
+      doc,
+      definitions,
+      operations,
+      resolvedOptions,
     );
   } else {
     navigationChildren = buildFlatTagDocTree(

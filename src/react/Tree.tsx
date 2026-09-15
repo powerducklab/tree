@@ -72,15 +72,16 @@ const styles = {
 } as const;
 
 import {
-  LuChevronRight,
   LuEllipsisVertical,
   LuFile,
   LuFolder,
   LuFoldVertical,
   LuGripVertical,
+  LuRefreshCw,
   LuSearch,
   LuUnfoldVertical,
 } from "react-icons/lu";
+import { FaCaretRight } from "react-icons/fa";
 
 /* -------------------------------------------------------------------------- */
 /* Icons (react-icons/lucide, high-quality flat design)                       */
@@ -88,9 +89,9 @@ import {
 
 function ChevronIcon({ expanded }: { expanded: boolean }) {
   return (
-    <LuChevronRight
+    <FaCaretRight
       className={`${styles.expandIcon} ${expanded ? styles.expandIconExpanded : ""}`}
-      size={14}
+      size={10}
       aria-hidden="true"
     />
   );
@@ -101,7 +102,7 @@ function SearchIcon() {
 }
 
 function DragHandleIcon() {
-  return <LuGripVertical size={14} aria-hidden="true" />;
+  return <LuGripVertical size={16} aria-hidden="true" />;
 }
 
 function MoreIcon() {
@@ -519,6 +520,8 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
     searchable = false,
     searchPlaceholder = "Search...",
     showExpandAll = false,
+    showRefresh = false,
+    onRefresh,
     toolbar,
     renderNode,
     renderIcon,
@@ -982,6 +985,17 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
                 <LuFoldVertical size={14} aria-hidden="true" />
               </button>
             </>
+          )}
+          {showRefresh && (
+            <button
+              type="button"
+              className={styles.iconButton}
+              onClick={onRefresh}
+              title="Refresh"
+              aria-label="Refresh"
+            >
+              <LuRefreshCw size={14} aria-hidden="true" />
+            </button>
           )}
         </div>
       )}
