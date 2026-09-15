@@ -91,6 +91,9 @@ export interface TreeProps<TMetadata = unknown> {
   /** Custom toolbar content rendered above the tree. */
   toolbar?: ReactNode;
 
+  /** Extra content rendered inside the search row, between the search input and action buttons. */
+  searchRowExtra?: ReactNode;
+
   /** Custom node renderer. Overrides all default rendering. */
   renderNode?: (
     context: TreeRenderContext<TMetadata>,

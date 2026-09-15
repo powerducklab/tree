@@ -77,8 +77,6 @@ import {
   LuBraces,
   LuChevronDown,
   LuChevronRight,
-  LuChevronsDown,
-  LuChevronsUp,
   LuCircle,
   LuEllipsisVertical,
   LuFolder,
@@ -89,6 +87,7 @@ import {
   LuSearch,
   LuZap,
 } from "react-icons/lu";
+import { MdOutlineUnfoldMore, MdUnfoldLess } from "react-icons/md";
 
 /* -------------------------------------------------------------------------- */
 /* Icons (react-icons/lucide, high-quality flat design)                       */
@@ -444,12 +443,8 @@ function NodeRenderer<TMetadata>(props: NodeRendererProps<TMetadata>) {
     </span>
   );
 
-  /* Default suffix */
-  const defaultSuffix = renderSuffix ? (
-    renderSuffix(context)
-  ) : (
-    <>{required && <span className={styles.requiredDot} title="Required" />}</>
-  );
+  /* Default suffix: only consumer renderSuffix (required dot is inline after label) */
+  const defaultSuffix = renderSuffix ? renderSuffix(context) : null;
 
   const rowClassName = [
     styles.nodeRow,
@@ -511,6 +506,7 @@ function NodeRenderer<TMetadata>(props: NodeRendererProps<TMetadata>) {
       {defaultIcon}
       {method && <MethodBadge method={method} />}
       {defaultLabel}
+      {required && <span className={styles.requiredDot} title="Required" />}
       <span className={styles.nodeSuffix}>{defaultSuffix}</span>
       {showContextMenuButton && (
         <button
@@ -569,6 +565,7 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
     showRefresh = false,
     onRefresh,
     toolbar,
+    searchRowExtra,
     renderNode,
     renderIcon,
     renderLabel,
@@ -1061,29 +1058,21 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
               aria-label="Search tree"
             />
           </div>
+          {searchRowExtra}
           {showExpandAll && (
-            <>
-              <button
-                type="button"
-                className={styles.iconButton}
-                onClick={expansion.expandAll}
-                disabled={expansion.isAllExpanded}
-                title="Expand all"
-                aria-label="Expand all"
-              >
-                <LuChevronsDown size={14} aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                className={styles.iconButton}
-                onClick={expansion.collapseAll}
-                disabled={expansion.expandedIds.length === 0}
-                title="Collapse all"
-                aria-label="Collapse all"
-              >
-                <LuChevronsUp size={14} aria-hidden="true" />
-              </button>
-            </>
+            <button
+              type="button"
+              className={styles.iconButton}
+              onClick={expansion.isAllExpanded ? expansion.collapseAll : expansion.expandAll}
+              title={expansion.isAllExpanded ? "Collapse all" : "Expand all"}
+              aria-label={expansion.isAllExpanded ? "Collapse all" : "Expand all"}
+            >
+              {expansion.isAllExpanded ? (
+                <MdUnfoldLess size={16} aria-hidden="true" />
+              ) : (
+                <MdOutlineUnfoldMore size={16} aria-hidden="true" />
+              )}
+            </button>
           )}
           {showRefresh && (
             <button

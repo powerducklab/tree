@@ -185,6 +185,7 @@
   user-select: none;
   white-space: nowrap;
   position: relative;
+  outline: none;
   transition: background var(--transition-fast, 140ms ease);
 }
 
@@ -193,7 +194,7 @@
 }
 
 .pde-tree-nodeRowSelected {
-  background: var(--color-surface-hover, #f4f5f6);
+  background: var(--color-surface-selected, #eef0f2);
 }
 
 .pde-tree-nodeRowSelected::before {
@@ -208,7 +209,7 @@
 }
 
 .pde-tree-nodeRowSelected:hover {
-  background: var(--color-surface-active, #e7eaed);
+  background: var(--color-surface-selected, #eef0f2);
 }
 
 .pde-tree-nodeRowSelected .pde-tree-nodeLabel {

@@ -9,13 +9,13 @@ Extensible tree component for API navigation, schema exploration, and documentat
 - **Generic core** — `TreeNode<TMetadata>` works with any data source
 - **OpenAPI adapter** — tag-based navigation with OAS 3.2 native parent nesting, `x-tagGroups`, `x-order`, `x-displayName`, `x-internal`
 - **JSON Schema adapter** — deep expansion of nested properties, arrays, combinators with `jsonPath` metadata for editor line jumping
-- **Doc adapter** — Stripe-style documentation tree with parameters, request body, and responses
-- **React component** — search, expand/collapse, keyboard navigation, method badges, custom render props
-- **Drag and drop** — reorder within the same parent **and cross-level move into folders**, with three-zone drop detection, `canDrag`/`canDrop` predicates, `onReorder`/`onMove` callbacks, and circular reference prevention
-- **Context menu** — right-click or the more (…) button for per-node actions, with custom item definitions, icons, separators, and danger styling
+- **Doc adapter** — Stripe-style documentation tree with operation count badges, parameters, request body, and responses
+- **React component** — search, expand/collapse toggle (Material Design unfold icons), keyboard navigation, method badges, custom render props, `searchRowExtra` for inline toolbar extensions
+- **Drag and drop** — reorder within the same parent **and cross-level move into folders**, with three-zone drop detection, `canDrag`/`canDrop` predicates, `dragGroupKey` isolation, `onReorder`/`onMove` callbacks, and circular reference prevention
+- **Context menu** — right-click or the more (…) button for per-node actions, with custom item definitions, icons, separators, danger styling, and two-step confirm for destructive actions
 - **Imperative locate** — `locateNode(predicate)` finds a node, expands all ancestors, selects it, and scrolls into view (ideal for "jump to API" features)
 - **JSON Patch integration** — `onPatch` callback emits RFC 6902 operations for reorder/move/delete, compatible with [`@powerduck/conf-patch`](https://www.npmjs.com/package/@powerduck/conf-patch) for applying to the original document
-- **High-quality icons** — powered by [react-icons](https://react-icons.github.io/react-icons/) (Lucide icon set)
+- **High-quality icons** — powered by [react-icons](https://react-icons.github.io/react-icons/) (Lucide + Material Design icon sets)
 - **CSS variable theming** — compatible with powerduck `tokens.css`, light/dark mode
 - **Zero hard dependencies** — core and adapters have no runtime dependencies; React layer requires `react`, `react-dom`, and `react-icons`
 
@@ -429,21 +429,28 @@ Builds a Stripe-style documentation tree where each operation expands to show pa
 | `defaultExpandDepth` | `number` | `1` | Default expansion depth |
 | `searchable` | `boolean` | `false` | Show search input |
 | `searchPlaceholder` | `string` | `"Search..."` | Search input placeholder |
-| `showExpandAll` | `boolean` | `false` | Show expand/collapse all buttons |
-| `toolbar` | `ReactNode` | — | Custom toolbar content |
+| `searchRowExtra` | `ReactNode` | — | Extra content inside the search row (between input and action buttons) |
+| `showExpandAll` | `boolean` | `false` | Show expand/collapse all toggle button (single toggle, Material Design unfold icons) |
+| `showRefresh` | `boolean` | `false` | Show refresh button |
+| `onRefresh` | `() => void` | — | Called when refresh button is clicked |
+| `toolbar` | `ReactNode` | — | Custom toolbar content rendered above the tree |
 | `renderNode` | `(ctx, defaultNode) => ReactNode` | — | Fully custom node renderer |
 | `renderIcon` | `(ctx) => ReactNode` | — | Custom icon renderer |
 | `renderLabel` | `(ctx) => ReactNode` | — | Custom label renderer |
-| `renderSuffix` | `(ctx) => ReactNode` | — | Custom suffix (badges, etc.) |
+| `renderSuffix` | `(ctx) => ReactNode` | — | Custom suffix (badges, count, etc.) |
 | `className` | `string` | — | Additional CSS class |
 | `style` | `CSSProperties` | — | Inline styles |
 | `size` | `"xs" \| "sm" \| "md"` | `"sm"` | Size variant |
 | `showIndentGuides` | `boolean` | `true` | Show indent guide lines |
 | `maxHeight` | `number \| string` | — | Max height before scrolling |
 | `draggable` | `boolean` | `false` | Enable drag and drop reordering |
-| `onReorder` | `(result: ReorderResult) => void` | — | Called when a node is reordered |
+| `dragGroupKey` | `string` | — | Metadata key for drag isolation (nodes with different group values cannot intermix) |
+| `onReorder` | `(result: ReorderResult) => void` | — | Called when a node is reordered within the same parent |
+| `onMove` | `(nodes, movedNode, targetParentId) => void` | — | Called when a node is moved to a different parent |
 | `canDrag` | `(node) => boolean` | — | Predicate to control which nodes can be dragged |
 | `canDrop` | `(dragged, target, position) => boolean` | — | Predicate to control allowed drop targets |
+| `contextMenuItems` | `(node) => ContextMenuItem[]` | — | Right-click / more-button context menu items |
+| `onPatch` | `(ops, context) => void` | — | Called with RFC 6902 JSON Patch ops on reorder (for conf-patch integration) |
 
 #### Tree Handle (via ref)
 
