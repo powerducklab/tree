@@ -566,6 +566,16 @@
   background: var(--color-danger-soft, #fff2f1);
 }
 
+.pde-tree-contextMenuItemConfirming {
+  background: var(--color-danger-soft, #fff2f1);
+  font-weight: var(--font-weight-semibold, 600);
+}
+
+.pde-tree-contextMenuItemConfirming:hover:not(:disabled) {
+  background: var(--color-danger, #c95555);
+  color: var(--color-text-inverse, #ffffff);
+}
+
 .pde-tree-contextMenuIcon {
   display: inline-flex;
   align-items: center;

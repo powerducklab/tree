@@ -89,7 +89,7 @@ const HTTP_METHODS = [
 
 const DEFAULT_OPTIONS: Required<DocTreeOptions> = {
   showInternal: false,
-  showComponents: true,
+  showComponents: false,
   showWebhooks: true,
   expandOperationDetails: true,
 };

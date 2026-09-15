@@ -3,6 +3,11 @@ import { describe, expect, it } from "vitest";
 import { buildOpenApiTree } from "../../src/adapters/openapi";
 import { findNode } from "../../src/core/tree-utils";
 
+/* Helper: get children inside the top-level "APIs" section. */
+function apisChildren(result: ReturnType<typeof buildOpenApiTree>) {
+  return result.root.children?.find((n) => n.id === "section:apis")?.children ?? [];
+}
+
 /* -------------------------------------------------------------------------- */
 /* Fixtures                                                                   */
 /* -------------------------------------------------------------------------- */
@@ -59,7 +64,7 @@ describe("buildOpenApiTree - basic", () => {
 
   it("groups operations by tag", () => {
     const result = buildOpenApiTree(basicDocument);
-    const usersTag = result.root.children?.find((n) => n.name === "Users");
+    const usersTag = apisChildren(result).find((n) => n.name === "Users");
 
     expect(usersTag).toBeDefined();
     expect(usersTag?.children?.length).toBe(3);
@@ -67,7 +72,7 @@ describe("buildOpenApiTree - basic", () => {
 
   it("includes method in operation metadata", () => {
     const result = buildOpenApiTree(basicDocument);
-    const operation = findNode(result.root.children ?? [], "op:Users:listUsers");
+    const operation = findNode(apisChildren(result), "op:Users:listUsers");
 
     expect(operation?.metadata?.method).toBe("get");
     expect(operation?.metadata?.path).toBe("/users");
@@ -92,7 +97,7 @@ describe("buildOpenApiTree - basic", () => {
       info: { title: "Empty", version: "1.0.0" },
     });
 
-    expect(result.root.children).toEqual([]);
+    expect(apisChildren(result)).toEqual([]);
   });
 });
 
@@ -112,7 +117,7 @@ describe("buildOpenApiTree - untagged", () => {
       },
     });
 
-    const other = result.root.children?.find((n) => n.name === "Other");
+    const other = apisChildren(result).find((n) => n.name === "Other");
     expect(other).toBeDefined();
     expect(other?.children?.length).toBe(1);
   });
@@ -137,8 +142,8 @@ describe("buildOpenApiTree - x-order", () => {
       },
     });
 
-    expect(result.root.children?.[0]?.name).toBe("Apple");
-    expect(result.root.children?.[1]?.name).toBe("Zebra");
+    expect(apisChildren(result)[0]?.name).toBe("Apple");
+    expect(apisChildren(result)[1]?.name).toBe("Zebra");
   });
 
   it("sorts operations by x-order within a tag", () => {
@@ -153,7 +158,7 @@ describe("buildOpenApiTree - x-order", () => {
       },
     });
 
-    const tag = result.root.children?.[0];
+    const tag = apisChildren(result)[0];
     expect(tag?.children?.[0]?.name).toBe("B");
     expect(tag?.children?.[1]?.name).toBe("A");
   });
@@ -174,7 +179,7 @@ describe("buildOpenApiTree - x-displayName", () => {
       },
     });
 
-    expect(result.root.children?.[0]?.name).toBe("User Management");
+    expect(apisChildren(result)[0]?.name).toBe("User Management");
   });
 });
 
@@ -195,7 +200,7 @@ describe("buildOpenApiTree - internal", () => {
       },
     });
 
-    const tag = result.root.children?.[0];
+    const tag = apisChildren(result)[0];
     expect(tag?.children?.length).toBe(1);
     expect(tag?.children?.[0]?.name).toBe("Public");
   });
@@ -215,7 +220,7 @@ describe("buildOpenApiTree - internal", () => {
       { showInternal: true },
     );
 
-    const tag = result.root.children?.[0];
+    const tag = apisChildren(result)[0];
     expect(tag?.children?.length).toBe(2);
   });
 
@@ -231,7 +236,7 @@ describe("buildOpenApiTree - internal", () => {
       },
     });
 
-    const tag = result.root.children?.[0];
+    const tag = apisChildren(result)[0];
     expect(tag?.children?.length).toBe(1);
   });
 });
@@ -255,9 +260,9 @@ describe("buildOpenApiTree - x-tagGroups", () => {
       },
     });
 
-    expect(result.root.children?.[0]?.name).toBe("Account");
-    expect(result.root.children?.[0]?.children?.[0]?.name).toBe("Users");
-    expect(result.root.children?.[1]?.name).toBe("Billing");
+    expect(apisChildren(result)[0]?.name).toBe("Account");
+    expect(apisChildren(result)[0]?.children?.[0]?.name).toBe("Users");
+    expect(apisChildren(result)[1]?.name).toBe("Billing");
   });
 
   it("supports nested groups via groups field", () => {
@@ -277,7 +282,7 @@ describe("buildOpenApiTree - x-tagGroups", () => {
       },
     });
 
-    const account = result.root.children?.[0];
+    const account = apisChildren(result)[0];
     expect(account?.name).toBe("Account");
     expect(account?.children?.length).toBe(2);
 
@@ -308,7 +313,7 @@ describe("buildOpenApiTree - OAS 3.2 parent nesting", () => {
       },
     });
 
-    const account = result.root.children?.find((n) => n.name === "Account");
+    const account = apisChildren(result).find((n) => n.name === "Account");
     expect(account).toBeDefined();
 
     const users = account?.children?.find((n) => n.name === "Users");
@@ -371,7 +376,7 @@ describe("buildOpenApiTree - deprecated", () => {
       },
     });
 
-    const operation = result.root.children?.[0]?.children?.[0];
+    const operation = apisChildren(result)[0]?.children?.[0];
     expect(operation?.metadata?.deprecated).toBe(true);
   });
 });
@@ -410,7 +415,7 @@ describe("buildOpenApiTree - components", () => {
       { showComponents: false },
     );
 
-    expect(result.root.children?.find((n) => n.name === "Components")).toBeUndefined();
+    expect(apisChildren(result).find((n) => n.name === "Components")).toBeUndefined();
   });
 });
 
@@ -425,7 +430,7 @@ describe("openapi adapter edge cases", () => {
       info: { title: "Empty", version: "1.0.0" },
     });
 
-    expect(result.root.children).toHaveLength(0);
+    expect(apisChildren(result)).toHaveLength(0);
   });
 
   it("handles document with paths but no tags (flat fallback)", () => {
@@ -502,7 +507,7 @@ describe("openapi adapter edge cases", () => {
       },
     });
 
-    const tagNames = result.root.children?.map((n) => n.name);
+    const tagNames = apisChildren(result).map((n) => n.name);
     expect(tagNames?.[0]).toBe("Apple");
     expect(tagNames?.[1]).toBe("Zebra");
   });

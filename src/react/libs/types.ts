@@ -29,6 +29,11 @@ export interface ContextMenuItem<TMetadata = unknown> {
   danger?: boolean;
   /** Render a separator above this item. */
   separator?: boolean;
+  /** Whether this item requires a two-step confirmation. First click arms it
+   * (label changes to confirmLabel), second click executes onClick. */
+  confirm?: boolean;
+  /** Label shown when the item is in confirm state. Default "Confirm?". */
+  confirmLabel?: string;
 }
 
 /**

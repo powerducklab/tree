@@ -22,13 +22,14 @@ export interface OpenApiNodeMetadata {
   /** JSON pointer to the source object in the document. */
   pointer?: string;
   /** Source of the navigation grouping. */
-  source?: "tag" | "tag-group" | "oas32-parent" | "fallback";
+  source?: "tag" | "tag-group" | "oas32-parent" | "fallback" | "section";
   /** Node kind for icon selection. */
   kind?: OpenApiNodeKind;
 }
 
 export type OpenApiNodeKind =
   | "root"
+  | "section"
   | "tag-group"
   | "tag"
   | "path"
@@ -844,8 +845,17 @@ export function buildOpenApiTree(
   const webhooksSection = buildWebhooksSection(doc, resolvedOptions);
   const componentsSection = buildComponentsSection(doc, resolvedOptions);
 
+  /* Wrap all API navigation under a top-level "APIs" section. */
+  const apisSection: OpenApiTreeNode = {
+    id: "section:apis",
+    name: "APIs",
+    children: navigationChildren,
+    metadata: { kind: "section", source: "section" },
+    order: 0,
+  };
+
   const allChildren = [
-    ...navigationChildren,
+    apisSection,
     ...(webhooksSection ? [webhooksSection] : []),
     ...(componentsSection ? [componentsSection] : []),
   ];

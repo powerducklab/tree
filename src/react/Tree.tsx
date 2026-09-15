@@ -30,6 +30,7 @@ const styles = {
   contextMenu: "pde-tree-contextMenu",
   contextMenuItem: "pde-tree-contextMenuItem",
   contextMenuItemDanger: "pde-tree-contextMenuItemDanger",
+  contextMenuItemConfirming: "pde-tree-contextMenuItemConfirming",
   contextMenuIcon: "pde-tree-contextMenuIcon",
   contextMenuSeparator: "pde-tree-contextMenuSeparator",
   deprecatedLabel: "pde-tree-deprecatedLabel",
@@ -130,6 +131,18 @@ function ContextMenu<TMetadata>({
   onClose: () => void;
 }) {
   const { x, y, items } = state;
+  const [confirmingIndex, setConfirmingIndex] = useState<number | null>(null);
+
+  const handleItemClick = (item: ContextMenuItem<TMetadata>, index: number) => {
+    if (item.confirm && confirmingIndex !== index) {
+      setConfirmingIndex(index);
+      return;
+    }
+
+    item.onClick(state.node);
+    setConfirmingIndex(null);
+    onClose();
+  };
 
   return (
     <div
@@ -149,18 +162,18 @@ function ContextMenu<TMetadata>({
             className={[
               styles.contextMenuItem,
               item.danger ? styles.contextMenuItemDanger : "",
+              confirmingIndex === index ? styles.contextMenuItemConfirming : "",
             ]
               .filter(Boolean)
               .join(" ")}
             disabled={item.disabled}
-            onClick={() => {
-              item.onClick(state.node);
-              onClose();
-            }}
+            onClick={() => handleItemClick(item, index)}
           >
             {item.icon && <span className={styles.contextMenuIcon}>{item.icon}</span>}
             <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>
-              {item.label}
+              {item.confirm && confirmingIndex === index
+                ? item.confirmLabel ?? "Confirm?"
+                : item.label}
             </span>
           </button>
         ),
