@@ -19,6 +19,7 @@
       "import": "./dist/react/index.js",
       "require": "./dist/react/index.cjs"
     },
+    "./react/index.css": "./dist/react/index.css",
     "./adapters": {
       "types": "./dist/adapters/index.d.ts",
       "import": "./dist/adapters/index.js",
