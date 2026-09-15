@@ -18,7 +18,45 @@ import type {
   TreeRenderContext,
 } from "./libs/types";
 import { getAncestorIdsToReveal } from "./libs/utils";
-import styles from "./Tree.module.css";
+import "./Tree.css";
+
+/* Plain CSS class name map (no CSS modules dependency for build reliability). */
+const styles = {
+  branchControl: "pde-tree-branchControl",
+  deprecatedLabel: "pde-tree-deprecatedLabel",
+  dragHandle: "pde-tree-dragHandle",
+  dragHandleDisabled: "pde-tree-dragHandleDisabled",
+  dropIndicatorAfter: "pde-tree-dropIndicatorAfter",
+  dropIndicatorBefore: "pde-tree-dropIndicatorBefore",
+  emptyState: "pde-tree-emptyState",
+  expandIcon: "pde-tree-expandIcon",
+  expandIconExpanded: "pde-tree-expandIconExpanded",
+  expandIconPlaceholder: "pde-tree-expandIconPlaceholder",
+  highlight: "pde-tree-highlight",
+  iconButton: "pde-tree-iconButton",
+  indentGuide: "pde-tree-indentGuide",
+  leafItem: "pde-tree-leafItem",
+  methodBadge: "pde-tree-methodBadge",
+  methodDelete: "pde-tree-methodDelete",
+  methodGet: "pde-tree-methodGet",
+  methodOther: "pde-tree-methodOther",
+  methodPatch: "pde-tree-methodPatch",
+  methodPost: "pde-tree-methodPost",
+  methodPut: "pde-tree-methodPut",
+  nodeDragging: "pde-tree-nodeDragging",
+  nodeIcon: "pde-tree-nodeIcon",
+  nodeLabel: "pde-tree-nodeLabel",
+  nodeLabelBranch: "pde-tree-nodeLabelBranch",
+  nodeRow: "pde-tree-nodeRow",
+  nodeRowSelected: "pde-tree-nodeRowSelected",
+  nodeSuffix: "pde-tree-nodeSuffix",
+  requiredDot: "pde-tree-requiredDot",
+  root: "pde-tree-root",
+  searchInput: "pde-tree-searchInput",
+  searchRow: "pde-tree-searchRow",
+  toolbar: "pde-tree-toolbar",
+  treeContainer: "pde-tree-treeContainer",
+} as const;
 
 /* -------------------------------------------------------------------------- */
 /* Icons (inline SVG, no external dependency)                                 */
@@ -127,11 +165,11 @@ function HighlightedText({
 /* -------------------------------------------------------------------------- */
 
 const METHOD_CLASS_MAP: Record<string, string> = {
-  get: styles.methodGet!,
-  post: styles.methodPost!,
-  put: styles.methodPut!,
-  patch: styles.methodPatch!,
-  delete: styles.methodDelete!,
+  get: styles.methodGet,
+  post: styles.methodPost,
+  put: styles.methodPut,
+  patch: styles.methodPatch,
+  delete: styles.methodDelete,
 };
 
 function MethodBadge({ method }: { method: string }) {

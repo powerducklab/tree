@@ -1,4 +1,4 @@
-.root {
+.pde-tree-root {
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -11,7 +11,7 @@
   background: var(--color-surface, #ffffff);
 }
 
-.toolbar {
+.pde-tree-toolbar {
   display: flex;
   align-items: center;
   gap: var(--space-2, 8px);
@@ -20,7 +20,7 @@
   flex-shrink: 0;
 }
 
-.searchRow {
+.pde-tree-searchRow {
   display: flex;
   align-items: center;
   gap: var(--space-1, 4px);
@@ -29,7 +29,7 @@
   flex-shrink: 0;
 }
 
-.searchInput {
+.pde-tree-searchInput {
   flex: 1;
   min-width: 0;
   height: var(--control-height-sm, 28px);
@@ -45,16 +45,16 @@
     box-shadow var(--transition-fast, 140ms ease);
 }
 
-.searchInput:focus {
+.pde-tree-searchInput:focus {
   border-color: var(--color-accent, #f28c28);
   box-shadow: 0 0 0 2px var(--color-focus-ring, rgba(242, 140, 40, 0.28));
 }
 
-.searchInput::placeholder {
+.pde-tree-searchInput::placeholder {
   color: var(--color-text-tertiary, #989da5);
 }
 
-.iconButton {
+.pde-tree-iconButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -72,21 +72,21 @@
   flex-shrink: 0;
 }
 
-.iconButton:hover:not(:disabled) {
+.pde-tree-iconButton:hover:not(:disabled) {
   background: var(--color-surface-hover, #f4f5f6);
   color: var(--color-text-primary, #26282b);
 }
 
-.iconButton:active:not(:disabled) {
+.pde-tree-iconButton:active:not(:disabled) {
   background: var(--color-surface-active, #e7eaed);
 }
 
-.iconButton:disabled {
+.pde-tree-iconButton:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
 
-.treeContainer {
+.pde-tree-treeContainer {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -94,29 +94,29 @@
   padding: var(--space-1, 4px) 0;
 }
 
-.treeContainer:focus {
+.pde-tree-treeContainer:focus {
   outline: none;
 }
 
 /* Custom scrollbar */
-.treeContainer::-webkit-scrollbar {
+.pde-tree-treeContainer::-webkit-scrollbar {
   width: 8px;
 }
 
-.treeContainer::-webkit-scrollbar-track {
+.pde-tree-treeContainer::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.treeContainer::-webkit-scrollbar-thumb {
+.pde-tree-treeContainer::-webkit-scrollbar-thumb {
   background: var(--color-border-default, #e0e4e8);
   border-radius: 4px;
 }
 
-.treeContainer::-webkit-scrollbar-thumb:hover {
+.pde-tree-treeContainer::-webkit-scrollbar-thumb:hover {
   background: var(--color-border-strong, #ccd2d8);
 }
 
-.nodeRow {
+.pde-tree-nodeRow {
   display: flex;
   align-items: center;
   gap: var(--space-1, 4px);
@@ -127,27 +127,27 @@
   transition: background var(--transition-fast, 140ms ease);
 }
 
-.nodeRow:hover {
+.pde-tree-nodeRow:hover {
   background: var(--color-surface-hover, #f4f5f6);
 }
 
-.nodeRowSelected {
+.pde-tree-nodeRowSelected {
   background: var(--color-surface-selected, #eef0f2);
 }
 
-.nodeRowSelected:hover {
+.pde-tree-nodeRowSelected:hover {
   background: var(--color-surface-active, #e7eaed);
 }
 
-.branchControl {
+.pde-tree-branchControl {
   cursor: pointer;
 }
 
-.leafItem {
+.pde-tree-leafItem {
   cursor: pointer;
 }
 
-.expandIcon {
+.pde-tree-expandIcon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -158,16 +158,16 @@
   transition: transform var(--transition-fast, 140ms ease);
 }
 
-.expandIconExpanded {
+.pde-tree-expandIconExpanded {
   transform: rotate(90deg);
 }
 
-.expandIconPlaceholder {
+.pde-tree-expandIconPlaceholder {
   width: 16px;
   flex-shrink: 0;
 }
 
-.nodeIcon {
+.pde-tree-nodeIcon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -177,7 +177,7 @@
   color: var(--color-text-tertiary, #989da5);
 }
 
-.nodeLabel {
+.pde-tree-nodeLabel {
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -186,18 +186,18 @@
   font-weight: var(--font-weight-regular, 400);
 }
 
-.nodeLabelBranch {
+.pde-tree-nodeLabelBranch {
   font-weight: var(--font-weight-medium, 500);
 }
 
-.nodeSuffix {
+.pde-tree-nodeSuffix {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1, 4px);
   flex-shrink: 0;
 }
 
-.methodBadge {
+.pde-tree-methodBadge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -211,42 +211,42 @@
   flex-shrink: 0;
 }
 
-.methodGet {
+.pde-tree-methodGet {
   color: var(--color-success, #428961);
   background: var(--color-success-soft, #eff8f2);
 }
 
-.methodPost {
+.pde-tree-methodPost {
   color: var(--color-info, #4f79bf);
   background: var(--color-info-soft, #f0f5ff);
 }
 
-.methodPut {
+.pde-tree-methodPut {
   color: var(--color-warning, #d98a22);
   background: var(--color-warning-soft, #fff8e8);
 }
 
-.methodPatch {
+.pde-tree-methodPatch {
   color: var(--color-dynamic, #4d7ec8);
   background: var(--color-accent-bg-soft, #f0f5ff);
 }
 
-.methodDelete {
+.pde-tree-methodDelete {
   color: var(--color-danger, #c95555);
   background: var(--color-danger-soft, #fff2f1);
 }
 
-.methodOther {
+.pde-tree-methodOther {
   color: var(--color-text-secondary, #6f747c);
   background: var(--color-surface-subtle, #f8f9fa);
 }
 
-.deprecatedLabel {
+.pde-tree-deprecatedLabel {
   text-decoration: line-through;
   color: var(--color-text-tertiary, #989da5);
 }
 
-.requiredDot {
+.pde-tree-requiredDot {
   width: 4px;
   height: 4px;
   border-radius: 50%;
@@ -254,14 +254,14 @@
   flex-shrink: 0;
 }
 
-.highlight {
+.pde-tree-highlight {
   background: var(--color-accent-bg, #fff8ef);
   color: var(--color-text-accent, #d97818);
   border-radius: 2px;
   padding: 0 1px;
 }
 
-.indentGuide {
+.pde-tree-indentGuide {
   width: 1px;
   align-self: stretch;
   background: var(--color-border-subtle, #eceff1);
@@ -269,7 +269,7 @@
   flex-shrink: 0;
 }
 
-.emptyState {
+.pde-tree-emptyState {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -282,7 +282,7 @@
 /* Drag and drop                                                              */
 /* -------------------------------------------------------------------------- */
 
-.dragHandle {
+.pde-tree-dragHandle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -296,32 +296,32 @@
     color var(--transition-fast, 140ms ease);
 }
 
-.dragHandle:hover {
+.pde-tree-dragHandle:hover {
   color: var(--color-text-primary, #26282b);
 }
 
-.dragHandle:active {
+.pde-tree-dragHandle:active {
   cursor: grabbing;
 }
 
-.dragHandleDisabled {
+.pde-tree-dragHandleDisabled {
   cursor: not-allowed;
   opacity: 0.3 !important;
 }
 
-.nodeRow:hover .dragHandle {
+.pde-tree-nodeRow:hover .pde-tree-dragHandle {
   opacity: 1;
 }
 
-.nodeDragging {
+.pde-tree-nodeDragging {
   opacity: 0.4;
 }
 
-.dropIndicatorBefore {
+.pde-tree-dropIndicatorBefore {
   position: relative;
 }
 
-.dropIndicatorBefore::before {
+.pde-tree-dropIndicatorBefore::before {
   content: "";
   position: absolute;
   top: 0;
@@ -333,11 +333,11 @@
   pointer-events: none;
 }
 
-.dropIndicatorAfter {
+.pde-tree-dropIndicatorAfter {
   position: relative;
 }
 
-.dropIndicatorAfter::after {
+.pde-tree-dropIndicatorAfter::after {
   content: "";
   position: absolute;
   bottom: 0;
