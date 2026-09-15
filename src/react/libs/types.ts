@@ -4,6 +4,34 @@ import type { TreeNode } from "../../core/types";
 import type { ReorderResult } from "../../core/tree-utils";
 
 /**
+ * RFC 6902 JSON Patch operation.
+ */
+export interface JsonPatchOp {
+  op: "add" | "remove" | "replace" | "move" | "copy" | "test";
+  path: (string | number)[];
+  value?: unknown;
+  from?: (string | number)[];
+}
+
+/**
+ * Context menu item definition.
+ */
+export interface ContextMenuItem<TMetadata = unknown> {
+  /** Display label. */
+  label: string;
+  /** Optional icon rendered before the label. */
+  icon?: ReactNode;
+  /** Click handler. */
+  onClick: (node: TreeNode<TMetadata>) => void;
+  /** Whether the item is disabled. */
+  disabled?: boolean;
+  /** Whether this is a danger action (red text). */
+  danger?: boolean;
+  /** Render a separator above this item. */
+  separator?: boolean;
+}
+
+/**
  * Render context passed to custom render functions.
  */
 export interface TreeRenderContext<TMetadata = unknown> {
@@ -103,6 +131,20 @@ export interface TreeProps<TMetadata = unknown> {
     targetNode: TreeNode<TMetadata>,
     position: "before" | "after" | "child",
   ) => boolean;
+
+  /**
+   * Context menu items for right-click and the more (…) button.
+   * Receives the node and returns an array of menu items.
+   * When provided, a more button appears on row hover and right-click opens the menu.
+   */
+  contextMenuItems?: (node: TreeNode<TMetadata>) => ContextMenuItem<TMetadata>[];
+
+  /**
+   * Called when a mutation (reorder, move, delete via context menu) produces JSON Patch operations.
+   * Only fires when the affected node has a `jsonPath` in its metadata.
+   * Use with @powerduck/conf-patch `patchContent` to apply to the original document.
+   */
+  onPatch?: (ops: JsonPatchOp[], context: { node: TreeNode<TMetadata>; type: "reorder" | "move" | "remove" }) => void;
 }
 
 /**

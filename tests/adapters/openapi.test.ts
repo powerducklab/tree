@@ -413,3 +413,123 @@ describe("buildOpenApiTree - components", () => {
     expect(result.root.children?.find((n) => n.name === "Components")).toBeUndefined();
   });
 });
+
+/* -------------------------------------------------------------------------- */
+/* Edge cases                                                                  */
+/* -------------------------------------------------------------------------- */
+
+describe("openapi adapter edge cases", () => {
+  it("handles document with no paths and no tags", () => {
+    const result = buildOpenApiTree({
+      openapi: "3.1.0",
+      info: { title: "Empty", version: "1.0.0" },
+    });
+
+    expect(result.root.children).toHaveLength(0);
+  });
+
+  it("handles document with paths but no tags (flat fallback)", () => {
+    const result = buildOpenApiTree({
+      openapi: "3.1.0",
+      info: { title: "No Tags", version: "1.0.0" },
+      paths: {
+        "/users": { get: { operationId: "listUsers" } },
+        "/orders": { post: { operationId: "createOrder" } },
+      },
+    });
+
+    /* Without tags, operations should appear directly under root (flat). */
+    expect(result.root.children?.length).toBeGreaterThan(0);
+  });
+
+  it("handles x-tagGroups with unknown tag names gracefully", () => {
+    const result = buildOpenApiTree({
+      openapi: "3.1.0",
+      info: { title: "Test", version: "1.0.0" },
+      tags: [{ name: "Users" }],
+      "x-tagGroups": [{ name: "Group", tags: ["Users", "NonExistent"] }],
+      paths: {
+        "/users": { get: { operationId: "listUsers", tags: ["Users"] } },
+      },
+    });
+
+    /* Should not throw, unknown tags are ignored. */
+    expect(result.root.children?.length).toBeGreaterThan(0);
+  });
+
+  it("handles empty x-tagGroups array", () => {
+    const result = buildOpenApiTree({
+      openapi: "3.1.0",
+      info: { title: "Test", version: "1.0.0" },
+      tags: [{ name: "Users" }],
+      "x-tagGroups": [],
+      paths: {
+        "/users": { get: { operationId: "listUsers", tags: ["Users"] } },
+      },
+    });
+
+    expect(result.root.children?.length).toBeGreaterThan(0);
+  });
+
+  it("handles OAS 3.2 parent nesting with cycle detection", () => {
+    const result = buildOpenApiTree({
+      openapi: "3.2.0",
+      info: { title: "Cycle", version: "1.0.0" },
+      tags: [
+        { name: "A", "x-tag-extension": { parent: "B" } },
+        { name: "B", "x-tag-extension": { parent: "A" } },
+      ],
+      paths: {
+        "/a": { get: { operationId: "aOp", tags: ["A"] } },
+      },
+    });
+
+    /* Should not infinite loop or throw. */
+    expect(result.root.children).toBeDefined();
+  });
+
+  it("respects x-order for tag sorting", () => {
+    const result = buildOpenApiTree({
+      openapi: "3.1.0",
+      info: { title: "Order", version: "1.0.0" },
+      tags: [
+        { name: "Zebra", "x-order": 1 },
+        { name: "Apple", "x-order": 0 },
+      ],
+      paths: {
+        "/z": { get: { operationId: "zOp", tags: ["Zebra"] } },
+        "/a": { get: { operationId: "aOp", tags: ["Apple"] } },
+      },
+    });
+
+    const tagNames = result.root.children?.map((n) => n.name);
+    expect(tagNames?.[0]).toBe("Apple");
+    expect(tagNames?.[1]).toBe("Zebra");
+  });
+
+  it("handles deprecated operations without crashing", () => {
+    const result = buildOpenApiTree({
+      openapi: "3.1.0",
+      info: { title: "Dep", version: "1.0.0" },
+      paths: {
+        "/old": { get: { operationId: "oldOp", deprecated: true } },
+        "/new": { get: { operationId: "newOp" } },
+      },
+    });
+
+    expect(result.root).toBeDefined();
+    expect(result.root.children).toBeDefined();
+  });
+
+  it("handles operations with no operationId", () => {
+    const result = buildOpenApiTree({
+      openapi: "3.1.0",
+      info: { title: "No OpId", version: "1.0.0" },
+      paths: {
+        "/test": { get: { summary: "Test endpoint" } },
+      },
+    });
+
+    expect(result.root.children?.length).toBeGreaterThan(0);
+  });
+});

@@ -1,6 +1,6 @@
 {
   "name": "@powerduck/tree",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Extensible tree component for API navigation, schema exploration, and documentation. Supports OpenAPI 3.2 nested tags, x-tagGroups, and custom data sources.",
   "license": "MIT",
   "author": "powerduck",
@@ -62,7 +62,8 @@
     }
   },
   "dependencies": {
-    "@powerduck/openapi-parser": "^0.3.3"
+    "@powerduck/openapi-parser": "^0.3.3",
+    "react-icons": "^5.7.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.0",

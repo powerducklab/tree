@@ -430,3 +430,125 @@
   box-shadow: inset 0 0 0 1px var(--color-accent, #f28c28);
   border-radius: var(--radius-sm, 4px);
 }
+
+/* -------------------------------------------------------------------------- */
+/* More button (three dots, visible on hover)                                 */
+/* -------------------------------------------------------------------------- */
+
+.pde-tree-moreButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  flex-shrink: 0;
+  color: var(--color-text-tertiary, #989da5);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-xs, 3px);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--transition-fast, 140ms ease),
+    background var(--transition-fast, 140ms ease),
+    color var(--transition-fast, 140ms ease);
+}
+
+.pde-tree-nodeRow:hover .pde-tree-moreButton {
+  opacity: 1;
+}
+
+.pde-tree-moreButton:hover {
+  background: var(--color-surface-hover, #f4f5f6);
+  color: var(--color-text-primary, #26282b);
+}
+
+.pde-tree-moreButtonActive {
+  opacity: 1 !important;
+  background: var(--color-surface-active, #e7eaed);
+  color: var(--color-text-primary, #26282b);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Context menu (dropdown)                                                    */
+/* -------------------------------------------------------------------------- */
+
+.pde-tree-contextMenu {
+  position: fixed;
+  z-index: 1000;
+  min-width: 180px;
+  max-width: 280px;
+  padding: 4px;
+  background: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-border-default, #e0e4e8);
+  border-radius: var(--radius-md, 6px);
+  box-shadow: var(--shadow-lg, 0 16px 40px rgba(28, 32, 36, 0.1));
+  font-size: var(--font-size-xs, 12px);
+  font-family: inherit;
+  animation: pde-tree-menuFadeIn 120ms ease;
+}
+
+@keyframes pde-tree-menuFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pde-tree-contextMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 28px;
+  padding: 0 8px;
+  text-align: left;
+  font-size: var(--font-size-xs, 12px);
+  font-family: inherit;
+  color: var(--color-text-primary, #26282b);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-xs, 3px);
+  cursor: pointer;
+  transition: background var(--transition-fast, 140ms ease);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pde-tree-contextMenuItem:hover:not(:disabled) {
+  background: var(--color-surface-hover, #f4f5f6);
+}
+
+.pde-tree-contextMenuItem:disabled {
+  color: var(--color-text-disabled, #c2c6cc);
+  cursor: not-allowed;
+}
+
+.pde-tree-contextMenuItemDanger {
+  color: var(--color-danger, #c95555);
+}
+
+.pde-tree-contextMenuItemDanger:hover:not(:disabled) {
+  background: var(--color-danger-soft, #fff2f1);
+}
+
+.pde-tree-contextMenuIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--color-text-secondary, #6f747c);
+}
+
+.pde-tree-contextMenuSeparator {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--color-border-subtle, #eceff1);
+}

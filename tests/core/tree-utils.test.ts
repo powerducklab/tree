@@ -473,3 +473,128 @@ describe("moveNode", () => {
     expect(result).toBeNull();
   });
 });
+
+/* -------------------------------------------------------------------------- */
+/* Edge cases and boundary conditions                                          */
+/* -------------------------------------------------------------------------- */
+
+describe("edge cases", () => {
+  const emptyTree: TreeNode[] = [];
+  const singleNode: TreeNode[] = [{ id: "only", name: "Only" }];
+
+  it("handles empty tree for all read operations", () => {
+    expect(findNode(emptyTree, "a")).toBeUndefined();
+    expect(findPath(emptyTree, "a")).toBeNull();
+    expect(getLeaves(emptyTree)).toEqual([]);
+    expect(countNodes(emptyTree)).toBe(0);
+    expect(getMaxDepth(emptyTree)).toBe(0);
+    expect(getBranchIds(emptyTree)).toEqual([]);
+    expect(getExpandableIds(emptyTree)).toEqual([]);
+    expect(flattenTree(emptyTree)).toEqual([]);
+  });
+
+  it("handles single node tree", () => {
+    expect(countNodes(singleNode)).toBe(1);
+    expect(getMaxDepth(singleNode)).toBe(1);
+    expect(getLeaves(singleNode)).toHaveLength(1);
+    expect(findNode(singleNode, "only")?.id).toBe("only");
+  });
+
+  it("returns null for reordering non-existent node", () => {
+    expect(reorderNode(sampleTree, "non-existent", 0)).toBeNull();
+  });
+
+  it("returns null for moving non-existent node", () => {
+    expect(moveNode(sampleTree, "non-existent", "a")).toBeNull();
+  });
+
+  it("returns null for moving to non-existent parent", () => {
+    expect(moveNode(sampleTree, "a1", "non-existent")).toBeNull();
+  });
+
+  it("clamps reorder index to valid range", () => {
+    const result = reorderNode(sampleTree, "a", 999);
+    expect(result).not.toBeNull();
+    /* "a" should be at the end. */
+    expect(result?.nodes[result.nodes.length - 1]?.id).toBe("a");
+  });
+
+  it("handles negative reorder index", () => {
+    const result = reorderNode(sampleTree, "b", -10);
+    expect(result).not.toBeNull();
+    expect(result?.nodes[0]?.id).toBe("b");
+  });
+
+  it("removeNode returns original tree for non-existent id", () => {
+    const result = removeNode(sampleTree, "non-existent");
+    expect(result).toBe(sampleTree);
+  });
+
+  it("updateNode returns original tree for non-existent id", () => {
+    const result = updateNode(sampleTree, "non-existent", { name: "x" });
+    expect(result).toBe(sampleTree);
+  });
+
+  it("insertChild returns original tree for non-existent parent", () => {
+    const result = insertChild(sampleTree, "non-existent", { id: "x", name: "x" });
+    expect(result).toBe(sampleTree);
+  });
+
+  it("isTreeNode correctly identifies null and undefined", () => {
+    expect(isTreeNode(null)).toBe(false);
+    expect(isTreeNode(undefined)).toBe(false);
+  });
+
+  it("isTreeNode accepts objects with id", () => {
+    expect(isTreeNode({ id: "a", name: "A" })).toBe(true);
+  });
+
+  it("filterTree returns original tree for empty query", () => {
+    const result = filterTree(sampleTree, { query: "" });
+    expect(result).toBe(sampleTree);
+  });
+
+  it("filterTree returns empty when no nodes match", () => {
+    const result = filterTree(sampleTree, { query: "zzz-no-match" });
+    expect(result).toEqual([]);
+  });
+
+  it("filterTree preserves ancestors of matching leaves", () => {
+    const result = filterTree(sampleTree, { query: "a1" });
+    /* Should include "a" (ancestor) and "a1" (match), but not "a2". */
+    expect(result).toHaveLength(1);
+    expect(result[0]?.id).toBe("a");
+    expect(result[0]?.children?.map((n) => n.id)).toEqual(["a1"]);
+  });
+
+  it("sortTree sorts by name", () => {
+    const unsorted: TreeNode[] = [
+      { id: "z", name: "Zebra" },
+      { id: "a", name: "Apple" },
+      { id: "m", name: "Mango" },
+    ];
+    const sorted = sortTree(unsorted);
+    expect(sorted.map((n) => n.name)).toEqual(["Apple", "Mango", "Zebra"]);
+  });
+
+  it("handles deeply nested tree (depth 10)", () => {
+    let deep: TreeNode[] = [{ id: "n0", name: "n0" }];
+    for (let i = 1; i < 10; i++) {
+      deep = [{ id: `n${i}`, name: `n${i}`, children: deep }];
+    }
+    expect(getMaxDepth(deep)).toBe(10);
+    expect(countNodes(deep)).toBe(10);
+    expect(findNode(deep, "n0")?.id).toBe("n0");
+    expect(findPath(deep, "n0")?.ancestorIds).toHaveLength(9);
+  });
+
+  it("moveNode to null parent moves to root", () => {
+    const result = moveNode(sampleTree, "a1", null);
+    expect(result).not.toBeNull();
+    /* a1 should now be at root level. */
+    expect(result?.some((n) => n.id === "a1")).toBe(true);
+    /* a should no longer have a1 as child. */
+    const a = result?.find((n) => n.id === "a");
+    expect(a?.children?.some((n) => n.id === "a1")).toBe(false);
+  });
+});

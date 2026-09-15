@@ -2,6 +2,8 @@
 
 Extensible tree component for API navigation, schema exploration, and documentation. Built on a generic core with adapters for OpenAPI, JSON Schema, and custom data sources.
 
+[Website](https://powerduck.dev) · [Documentation](https://powerduck.dev/docs/tree) · [GitHub](https://github.com/powerducklab/tree) · [npm](https://www.npmjs.com/package/@powerduck/tree)
+
 ## Features
 
 - **Generic core** — `TreeNode<TMetadata>` works with any data source
@@ -10,9 +12,12 @@ Extensible tree component for API navigation, schema exploration, and documentat
 - **Doc adapter** — Stripe-style documentation tree with parameters, request body, and responses
 - **React component** — search, expand/collapse, keyboard navigation, method badges, custom render props
 - **Drag and drop** — reorder within the same parent **and cross-level move into folders**, with three-zone drop detection, `canDrag`/`canDrop` predicates, `onReorder`/`onMove` callbacks, and circular reference prevention
+- **Context menu** — right-click or the more (…) button for per-node actions, with custom item definitions, icons, separators, and danger styling
 - **Imperative locate** — `locateNode(predicate)` finds a node, expands all ancestors, selects it, and scrolls into view (ideal for "jump to API" features)
+- **JSON Patch integration** — `onPatch` callback emits RFC 6902 operations for reorder/move/delete, compatible with [`@powerduck/conf-patch`](https://www.npmjs.com/package/@powerduck/conf-patch) for applying to the original document
+- **High-quality icons** — powered by [react-icons](https://react-icons.github.io/react-icons/) (Lucide icon set)
 - **CSS variable theming** — compatible with powerduck `tokens.css`, light/dark mode
-- **Zero hard dependencies** — core and adapters have no runtime dependencies; React layer requires `react` and `react-dom`
+- **Zero hard dependencies** — core and adapters have no runtime dependencies; React layer requires `react`, `react-dom`, and `react-icons`
 
 ## Installation
 
@@ -23,7 +28,7 @@ npm install @powerduck/tree
 ### Peer Dependencies
 
 ```bash
-npm install react react-dom
+npm install react react-dom react-icons
 ```
 
 ### CSS Import
@@ -244,6 +249,77 @@ function TreeWithLocate() {
 | `getSelectedNode()` | Get the currently selected node |
 | `scrollToNode(id)` | Scroll a node into view by ID |
 | `locateNode(predicate)` | Find a node by predicate, expand ancestors, select, and scroll into view |
+
+## Context Menu
+
+Enable per-node actions via right-click or the more (…) button that appears on row hover. Define menu items with the `contextMenuItems` prop.
+
+```tsx
+import { LuCopy, LuTrash2 } from "react-icons/lu";
+import { Tree } from "@powerduck/tree/react";
+import type { ContextMenuItem } from "@powerduck/tree/react";
+
+function ApiTree({ nodes }) {
+  const buildMenu = (node): ContextMenuItem[] => [
+    {
+      label: "Copy operationId",
+      icon: <LuCopy size={14} />,
+      onClick: (n) => navigator.clipboard.writeText(n.metadata?.operationId ?? ""),
+    },
+    { separator: true, label: "", onClick: () => undefined },
+    {
+      label: "Delete",
+      icon: <LuTrash2 size={14} />,
+      danger: true,
+      onClick: (n) => console.log("Delete", n.id),
+    },
+  ];
+
+  return <Tree nodes={nodes} contextMenuItems={buildMenu} />;
+}
+```
+
+### ContextMenuItem properties
+
+| Property | Type | Description |
+| --- | --- | --- |
+| `label` | `string` | Display text |
+| `icon` | `ReactNode` | Optional icon before label |
+| `onClick` | `(node) => void` | Click handler |
+| `disabled` | `boolean` | Disable the item |
+| `danger` | `boolean` | Red text for destructive actions |
+| `separator` | `boolean` | Render a horizontal line above this item |
+
+## JSON Patch & conf-patch Integration
+
+When nodes carry a `jsonPath` in their metadata, the tree emits RFC 6902 JSON Patch operations via the `onPatch` callback. Apply these to the original document with [`@powerduck/conf-patch`](https://www.npmjs.com/package/@powerduck/conf-patch).
+
+```tsx
+import { patchContent } from "@powerduck/conf-patch/core";
+import { Tree } from "@powerduck/tree/react";
+import type { JsonPatchOp } from "@powerduck/tree/react";
+
+function EditableTree({ initialDocument, format }) {
+  const [document, setDocument] = useState(initialDocument);
+
+  const handlePatch = (ops: JsonPatchOp[]) => {
+    /* Apply patch operations to the document string. */
+    const updated = patchContent(document, ops, format);
+    setDocument(updated);
+  };
+
+  return (
+    <Tree
+      nodes={nodes}
+      draggable
+      onReorder={(result) => setNodes(result.nodes)}
+      onPatch={handlePatch}
+    />
+  );
+}
+```
+
+Patch operations are currently emitted for **reorder** (array `move`). Nodes must have `metadata.jsonPath` as an array of path segments for patch generation.
 
 ## API Reference
 

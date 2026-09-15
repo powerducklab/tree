@@ -350,3 +350,135 @@ describe("formatSchemaType", () => {
     expect(formatSchemaType({ jsonPath: [], kind: "unknown" })).toBe("any");
   });
 });
+
+/* -------------------------------------------------------------------------- */
+/* Edge cases                                                                  */
+/* -------------------------------------------------------------------------- */
+
+describe("json-schema adapter edge cases", () => {
+  it("handles empty schema object", () => {
+    const result = buildSchemaTree({});
+    expect(result.root.children ?? []).toHaveLength(0);
+  });
+
+  it("handles schema with only type", () => {
+    const result = buildSchemaTree({ type: "string" });
+    expect(result.root.children ?? []).toHaveLength(0);
+  });
+
+  it("handles schema with $ref cycle (no infinite recursion)", () => {
+    const cyclicSchema: Record<string, unknown> = {
+      type: "object",
+      definitions: {
+        Node: {
+          type: "object",
+          properties: {
+            child: { $ref: "#/definitions/Node" },
+          },
+        },
+      },
+      properties: {
+        root: { $ref: "#/definitions/Node" },
+      },
+    };
+
+    /* Should not throw or infinite loop. */
+    const result = buildSchemaTree(cyclicSchema);
+    expect(result.root.children).toBeDefined();
+  });
+
+  it("respects maxDepth option", () => {
+    const deepSchema = {
+      type: "object",
+      properties: {
+        a: {
+          type: "object",
+          properties: {
+            b: {
+              type: "object",
+              properties: {
+                c: { type: "string" },
+              },
+            },
+          },
+        },
+      },
+    };
+
+    const result = buildSchemaTree(deepSchema, { maxDepth: 2 });
+    /* At depth 2, we should see "a" but not expand into "b". */
+    const aNode = result.root.children?.find((n) => n.name === "a");
+    expect(aNode).toBeDefined();
+    /* a's children should not be deeply expanded. */
+    expect(aNode?.children?.[0]?.children).toBeUndefined();
+  });
+
+  it("handles allOf combinator", () => {
+    const schema = {
+      allOf: [
+        { type: "object", properties: { a: { type: "string" } } },
+        { type: "object", properties: { b: { type: "number" } } },
+      ],
+    };
+
+    const result = buildSchemaTree(schema);
+    expect(result.root.children?.length).toBeGreaterThan(0);
+  });
+
+  it("handles anyOf combinator", () => {
+    const schema = {
+      anyOf: [{ type: "string" }, { type: "number" }],
+    };
+
+    const result = buildSchemaTree(schema);
+    expect(result.root.children).toBeDefined();
+  });
+
+  it("handles oneOf combinator", () => {
+    const schema = {
+      oneOf: [{ type: "string" }, { type: "null" }],
+    };
+
+    const result = buildSchemaTree(schema);
+    expect(result.root.children).toBeDefined();
+  });
+
+  it("handles additionalProperties", () => {
+    const schema = {
+      type: "object",
+      additionalProperties: { type: "string" },
+    };
+
+    const result = buildSchemaTree(schema);
+    expect(result.root).toBeDefined();
+  });
+
+  it("handles array items", () => {
+    const schema = {
+      type: "array",
+      items: { type: "object", properties: { id: { type: "string" } } },
+    };
+
+    const result = buildSchemaTree(schema);
+    expect(result.root.children).toBeDefined();
+  });
+
+  it("findSchemaNodeByPath returns undefined for non-existent path", () => {
+    const result = buildSchemaTree(basicSchema);
+    const node = findSchemaNodeByPath(result.root, ["properties", "nonExistent"]);
+    expect(node).toBeUndefined();
+  });
+
+  it("handles enum values", () => {
+    const schema = {
+      type: "object",
+      properties: {
+        status: { type: "string", enum: ["active", "inactive", "pending"] },
+      },
+    };
+
+    const result = buildSchemaTree(schema);
+    const statusNode = result.root.children?.find((n) => n.name === "status");
+    expect(statusNode?.metadata?.kind).toBe("enum");
+  });
+});

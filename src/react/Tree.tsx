@@ -1,6 +1,7 @@
 import {
   forwardRef,
   useCallback,
+  useEffect,
   useImperativeHandle,
   useMemo,
   useRef,
@@ -13,6 +14,8 @@ import { findPath, moveNode, reorderNode } from "../core/tree-utils";
 import { useTreeExpansion } from "./hooks/useTreeExpansion";
 import { useTreeSearch } from "./hooks/useTreeSearch";
 import type {
+  ContextMenuItem,
+  JsonPatchOp,
   TreeHandle,
   TreeProps,
   TreeRenderContext,
@@ -23,6 +26,11 @@ import "./Tree.css";
 /* Plain CSS class name map (no CSS modules dependency for build reliability). */
 const styles = {
   branchControl: "pde-tree-branchControl",
+  contextMenu: "pde-tree-contextMenu",
+  contextMenuItem: "pde-tree-contextMenuItem",
+  contextMenuItemDanger: "pde-tree-contextMenuItemDanger",
+  contextMenuIcon: "pde-tree-contextMenuIcon",
+  contextMenuSeparator: "pde-tree-contextMenuSeparator",
   deprecatedLabel: "pde-tree-deprecatedLabel",
   dragHandle: "pde-tree-dragHandle",
   dragHandleDisabled: "pde-tree-dragHandleDisabled",
@@ -44,6 +52,8 @@ const styles = {
   methodPatch: "pde-tree-methodPatch",
   methodPost: "pde-tree-methodPost",
   methodPut: "pde-tree-methodPut",
+  moreButton: "pde-tree-moreButton",
+  moreButtonActive: "pde-tree-moreButtonActive",
   nodeDragging: "pde-tree-nodeDragging",
   nodeIcon: "pde-tree-nodeIcon",
   nodeLabel: "pde-tree-nodeLabel",
@@ -61,72 +71,133 @@ const styles = {
   treeContainer: "pde-tree-treeContainer",
 } as const;
 
+import {
+  LuChevronRight,
+  LuEllipsisVertical,
+  LuFile,
+  LuFolder,
+  LuFoldVertical,
+  LuGripVertical,
+  LuSearch,
+  LuUnfoldVertical,
+} from "react-icons/lu";
+
 /* -------------------------------------------------------------------------- */
-/* Icons (inline SVG, no external dependency)                                 */
+/* Icons (react-icons/lucide, high-quality flat design)                       */
 /* -------------------------------------------------------------------------- */
 
 function ChevronIcon({ expanded }: { expanded: boolean }) {
   return (
-    <svg
+    <LuChevronRight
       className={`${styles.expandIcon} ${expanded ? styles.expandIconExpanded : ""}`}
-      viewBox="0 0 16 16"
-      fill="none"
+      size={14}
       aria-hidden="true"
-    >
-      <path
-        d="M6 3.5L10.5 8L6 12.5"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+    />
   );
 }
 
 function SearchIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 16 16"
-      fill="none"
-      aria-hidden="true"
-    >
-      <circle
-        cx="7"
-        cy="7"
-        r="4.5"
-        stroke="currentColor"
-        strokeWidth="1.5"
-      />
-      <path
-        d="M10.5 10.5L14 14"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
+  return <LuSearch size={14} aria-hidden="true" />;
 }
 
 function DragHandleIcon() {
+  return <LuGripVertical size={14} aria-hidden="true" />;
+}
+
+function MoreIcon() {
+  return <LuEllipsisVertical size={14} aria-hidden="true" />;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Context menu (lightweight dropdown, no external dependency)                */
+/* -------------------------------------------------------------------------- */
+
+interface ContextMenuState<TMetadata> {
+  x: number;
+  y: number;
+  node: TreeNode<TMetadata>;
+  items: ContextMenuItem<TMetadata>[];
+}
+
+function ContextMenu<TMetadata>({
+  state,
+  onClose,
+}: {
+  state: ContextMenuState<TMetadata>;
+  onClose: () => void;
+}) {
+  const { x, y, items } = state;
+
   return (
-    <svg
-      width="12"
-      height="16"
-      viewBox="0 0 12 16"
-      fill="currentColor"
-      aria-hidden="true"
+    <div
+      className={styles.contextMenu}
+      style={{ left: x, top: y }}
+      role="menu"
+      onMouseDown={(e) => e.stopPropagation()}
     >
-      <circle cx="3" cy="3" r="1.2" />
-      <circle cx="9" cy="3" r="1.2" />
-      <circle cx="3" cy="8" r="1.2" />
-      <circle cx="9" cy="8" r="1.2" />
-      <circle cx="3" cy="13" r="1.2" />
-      <circle cx="9" cy="13" r="1.2" />
-    </svg>
+      {items.map((item, index) =>
+        item.separator ? (
+          <div key={`sep-${index}`} className={styles.contextMenuSeparator} />
+        ) : (
+          <button
+            key={`${item.label}-${index}`}
+            type="button"
+            role="menuitem"
+            className={[
+              styles.contextMenuItem,
+              item.danger ? styles.contextMenuItemDanger : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            disabled={item.disabled}
+            onClick={() => {
+              item.onClick(state.node);
+              onClose();
+            }}
+          >
+            {item.icon && <span className={styles.contextMenuIcon}>{item.icon}</span>}
+            <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>
+              {item.label}
+            </span>
+          </button>
+        ),
+      )}
+    </div>
   );
+}
+
+/* -------------------------------------------------------------------------- */
+/* JSON Patch helpers (for @powerduck/conf-patch integration)                 */
+/* -------------------------------------------------------------------------- */
+
+function getNodeJsonPath(node: TreeNode<unknown>): (string | number)[] | undefined {
+  const metadata = node.metadata as Record<string, unknown> | undefined;
+  const jsonPath = metadata?.jsonPath;
+
+  if (Array.isArray(jsonPath) && jsonPath.length > 0) {
+    return jsonPath as (string | number)[];
+  }
+
+  return undefined;
+}
+
+function buildReorderPatch(
+  node: TreeNode<unknown>,
+  fromIndex: number,
+  toIndex: number,
+): JsonPatchOp[] {
+  const jsonPath = getNodeJsonPath(node);
+
+  if (!jsonPath || jsonPath.length === 0) {
+    return [];
+  }
+
+  /* The parent path is everything except the last segment (the array index). */
+  const parentPath = jsonPath.slice(0, -1);
+
+  return [
+    { op: "move", from: [...parentPath, fromIndex], path: [...parentPath, toIndex] },
+  ];
 }
 
 /* -------------------------------------------------------------------------- */
@@ -226,6 +297,11 @@ interface NodeRendererProps<TMetadata> {
   onDragLeave: (node: TreeNode<TMetadata>) => void;
   onDrop: (node: TreeNode<TMetadata>, event: React.DragEvent) => void;
   onDragEnd: () => void;
+  /* Context menu */
+  showContextMenuButton: boolean;
+  activeMenuNodeId: string | null;
+  onContextMenu: (node: TreeNode<TMetadata>, event: React.MouseEvent) => void;
+  onMoreClick: (node: TreeNode<TMetadata>, event: React.MouseEvent) => void;
 }
 
 function NodeRenderer<TMetadata>(props: NodeRendererProps<TMetadata>) {
@@ -251,6 +327,10 @@ function NodeRenderer<TMetadata>(props: NodeRendererProps<TMetadata>) {
     onDragLeave,
     onDrop,
     onDragEnd,
+    showContextMenuButton,
+    activeMenuNodeId,
+    onContextMenu,
+    onMoreClick,
   } = props;
 
   const isExpanded = expandedIds.includes(node.id);
@@ -308,17 +388,7 @@ function NodeRenderer<TMetadata>(props: NodeRendererProps<TMetadata>) {
     renderIcon(context)
   ) : method ? null : (
     <span className={styles.nodeIcon}>
-      <svg viewBox="0 0 16 16" fill="none" width="14" height="14" aria-hidden="true">
-        {isBranch ? (
-          <path
-            d="M2 4C2 3.44772 2.44772 3 3 3H6.5L8.5 5H13C13.5523 5 14 5.44772 14 6V12C14 12.5523 13.5523 13 13 13H3C2.44772 13 2 12.5523 2 12V4Z"
-            fill="currentColor"
-            opacity="0.3"
-          />
-        ) : (
-          <circle cx="8" cy="8" r="3" fill="currentColor" opacity="0.4" />
-        )}
-      </svg>
+      {isBranch ? <LuFolder size={14} /> : <LuFile size={14} />}
     </span>
   );
 
@@ -370,6 +440,7 @@ function NodeRenderer<TMetadata>(props: NodeRendererProps<TMetadata>) {
       tabIndex={0}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
+      onContextMenu={showContextMenuButton ? (event) => onContextMenu(node, event) : undefined}
       onDragOver={draggable ? (event) => onDragOver(node, event) : undefined}
       onDragLeave={draggable ? () => onDragLeave(node) : undefined}
       onDrop={draggable ? (event) => onDrop(node, event) : undefined}
@@ -394,6 +465,22 @@ function NodeRenderer<TMetadata>(props: NodeRendererProps<TMetadata>) {
       {defaultIcon}
       {defaultLabel}
       <span className={styles.nodeSuffix}>{defaultSuffix}</span>
+      {showContextMenuButton && (
+        <button
+          type="button"
+          className={[
+            styles.moreButton,
+            activeMenuNodeId === node.id ? styles.moreButtonActive : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+          onClick={(event) => onMoreClick(node, event)}
+          title="More actions"
+          aria-label="More actions"
+        >
+          <MoreIcon />
+        </button>
+      )}
     </div>
   );
 
@@ -448,10 +535,13 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
     onMove,
     canDrag,
     canDrop,
+    contextMenuItems,
+    onPatch,
   } = props;
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [dragState, setDragState] = useState<DragState>(INITIAL_DRAG_STATE);
+  const [contextMenu, setContextMenu] = useState<ContextMenuState<TMetadata> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const expansion = useTreeExpansion(nodes, {
@@ -664,16 +754,102 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
 
       if (result && result.fromIndex !== result.toIndex) {
         onReorder?.(result);
+
+        /* Emit JSON Patch if the moved node carries a jsonPath in metadata. */
+        if (onPatch) {
+          const patchOps = buildReorderPatch(result.moved, result.fromIndex, result.toIndex);
+
+          if (patchOps.length > 0) {
+            onPatch(patchOps, { node: result.moved, type: "reorder" });
+          }
+        }
       }
 
       setDragState(INITIAL_DRAG_STATE);
     },
-    [dragState, nodes, onMove, onReorder],
+    [dragState, nodes, onMove, onPatch, onReorder],
   );
 
   const handleDragEnd = useCallback(() => {
     setDragState(INITIAL_DRAG_STATE);
   }, []);
+
+  /* ------------------------------------------------------------------------ */
+  /* Context menu                                                              */
+  /* ------------------------------------------------------------------------ */
+
+  const openContextMenu = useCallback(
+    (node: TreeNode<TMetadata>, x: number, y: number) => {
+      if (!contextMenuItems) {
+        return;
+      }
+
+      const items = contextMenuItems(node);
+
+      if (items.length === 0) {
+        return;
+      }
+
+      /* Clamp position to viewport. */
+      const menuWidth = 200;
+      const menuHeight = items.length * 28 + 8;
+      const clampedX = Math.min(x, window.innerWidth - menuWidth - 8);
+      const clampedY = Math.min(y, window.innerHeight - menuHeight - 8);
+
+      setContextMenu({ x: Math.max(8, clampedX), y: Math.max(8, clampedY), node, items });
+    },
+    [contextMenuItems],
+  );
+
+  const closeContextMenu = useCallback(() => {
+    setContextMenu(null);
+  }, []);
+
+  const handleNodeContextMenu = useCallback(
+    (node: TreeNode<TMetadata>, event: React.MouseEvent) => {
+      event.preventDefault();
+      openContextMenu(node, event.clientX, event.clientY);
+    },
+    [openContextMenu],
+  );
+
+  const handleMoreButtonClick = useCallback(
+    (node: TreeNode<TMetadata>, event: React.MouseEvent) => {
+      event.stopPropagation();
+      const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+      openContextMenu(node, rect.left, rect.bottom + 4);
+    },
+    [openContextMenu],
+  );
+
+  /* Close context menu on outside click or escape. */
+  useEffect(() => {
+    if (!contextMenu) {
+      return;
+    }
+
+    const handleMouseDown = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+
+      if (!target.closest(`.${styles.contextMenu}`) && !target.closest(`.${styles.moreButton}`)) {
+        closeContextMenu();
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeContextMenu();
+      }
+    };
+
+    document.addEventListener("mousedown", handleMouseDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handleMouseDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [contextMenu, closeContextMenu]);
 
   /* ------------------------------------------------------------------------ */
 
@@ -793,9 +969,7 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
                 title="Expand all"
                 aria-label="Expand all"
               >
-                <svg viewBox="0 0 16 16" fill="none" width="14" height="14" aria-hidden="true">
-                  <path d="M2 4H14M2 8H14M2 12H14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
+                <LuUnfoldVertical size={14} aria-hidden="true" />
               </button>
               <button
                 type="button"
@@ -805,9 +979,7 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
                 title="Collapse all"
                 aria-label="Collapse all"
               >
-                <svg viewBox="0 0 16 16" fill="none" width="14" height="14" aria-hidden="true">
-                  <path d="M4 4H14M4 8H14M4 12H14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
+                <LuFoldVertical size={14} aria-hidden="true" />
               </button>
             </>
           )}
@@ -849,10 +1021,18 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               onDragEnd={handleDragEnd}
+              showContextMenuButton={Boolean(contextMenuItems)}
+              activeMenuNodeId={contextMenu?.node.id ?? null}
+              onContextMenu={handleNodeContextMenu}
+              onMoreClick={handleMoreButtonClick}
             />
           ))
         )}
       </div>
+
+      {contextMenu && (
+        <ContextMenu state={contextMenu} onClose={closeContextMenu} />
+      )}
     </div>
   );
 }) as <TMetadata = unknown>(
