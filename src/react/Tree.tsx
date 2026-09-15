@@ -72,6 +72,7 @@ const styles = {
 } as const;
 
 import {
+  LuBraces,
   LuEllipsisVertical,
   LuFile,
   LuFolder,
@@ -347,6 +348,7 @@ function NodeRenderer<TMetadata>(props: NodeRendererProps<TMetadata>) {
   const method = typeof metadata?.method === "string" ? metadata.method : undefined;
   const deprecated = metadata?.deprecated === true;
   const required = metadata?.required === true;
+  const nodeKind = typeof metadata?.kind === "string" ? metadata.kind : undefined;
 
   const context: TreeRenderContext<TMetadata> = {
     node,
@@ -389,7 +391,13 @@ function NodeRenderer<TMetadata>(props: NodeRendererProps<TMetadata>) {
     renderIcon(context)
   ) : method ? null : (
     <span className={styles.nodeIcon}>
-      {isBranch ? <LuFolder size={14} /> : <LuFile size={14} />}
+      {nodeKind === "schema" || nodeKind === "component" ? (
+        <LuBraces size={14} />
+      ) : isBranch ? (
+        <LuFolder size={14} />
+      ) : (
+        <LuFile size={14} />
+      )}
     </span>
   );
 
@@ -424,6 +432,7 @@ function NodeRenderer<TMetadata>(props: NodeRendererProps<TMetadata>) {
     isDragOver && dragOverPosition === "before" ? styles.dropIndicatorBefore : "",
     isDragOver && dragOverPosition === "after" ? styles.dropIndicatorAfter : "",
     isDragOver && dragOverPosition === "child" ? styles.dropIndicatorChild : "",
+    nodeKind ? `pde-tree-kind-${nodeKind}` : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -446,6 +455,14 @@ function NodeRenderer<TMetadata>(props: NodeRendererProps<TMetadata>) {
       onDragLeave={draggable ? () => onDragLeave(node) : undefined}
       onDrop={draggable ? (event) => onDrop(node, event) : undefined}
     >
+      {showIndentGuides &&
+        Array.from({ length: depth }, (_, i) => (
+          <span
+            key={`guide-${i}`}
+            className={styles.indentGuide}
+            style={{ left: `${(i + 1) * 16}px` }}
+          />
+        ))}
       {draggable && (
         <span
           className={`${styles.dragHandle} ${canDragNode ? "" : styles.dragHandleDisabled}`}
@@ -498,7 +515,6 @@ function NodeRenderer<TMetadata>(props: NodeRendererProps<TMetadata>) {
           depth={depth + 1}
         />
       ))}
-      {showIndentGuides && isBranch && !isExpanded && null}
     </div>
   );
 }
@@ -530,6 +546,7 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
     className,
     style,
     size = "sm",
+    variant = "default",
     showIndentGuides = true,
     maxHeight,
     rootRef,
@@ -936,7 +953,13 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
     [style, maxHeight],
   );
 
-  const rootClassName = [styles.root, className].filter(Boolean).join(" ");
+  const rootClassName = [
+    styles.root,
+    variant !== "default" ? `pde-tree-variant-${variant}` : "",
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <div

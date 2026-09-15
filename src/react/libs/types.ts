@@ -110,6 +110,13 @@ export interface TreeProps<TMetadata = unknown> {
   /** Size variant. Default "sm". */
   size?: "xs" | "sm" | "md";
 
+  /** Visual variant for different use cases. Default "default".
+   * - "api": API debug tree with method badges and drag handles
+   * - "schema": Schema/JSON Schema navigation tree
+   * - "doc": Stripe-style documentation tree with section headers
+   */
+  variant?: "default" | "api" | "schema" | "doc";
+
   /** Whether to show indent guides. Default true. */
   showIndentGuides?: boolean;
 
