@@ -794,3 +794,53 @@
 .pde-tree-variant-schema .pde-tree-leafItem .pde-tree-nodeIcon {
   color: var(--color-info, #4f79bf);
 }
+
+/* ========================================================================== */
+/* Dark mode                                                                  */
+/*                                                                            */
+/* Activated when ANY ancestor element has data-theme="dark". The descendant   */
+/* selector (.pde-tree-root is a descendant of [data-theme="dark"]) ensures    */
+/* the tree picks up dark values whether data-theme is set on :root, a layout  */
+/* wrapper, or any intermediate container.                                     */
+/* ========================================================================== */
+
+[data-theme="dark"] .pde-tree-root {
+  --color-text-primary: #e6edf3;
+  --color-text-secondary: #9198a1;
+  --color-text-tertiary: #6e7681;
+  --color-text-disabled: #484f58;
+  --color-surface: #161b22;
+  --color-surface-subtle: #1c2128;
+  --color-surface-hover: #22272e;
+  --color-surface-selected: #2d333b;
+  --color-border-subtle: #21262d;
+  --color-border-default: #30363d;
+  --color-border-strong: #484f58;
+  --color-accent: #a5a0ff;
+  --color-accent-active: #8b85ff;
+  --color-accent-bg: #26234a;
+  --color-accent-bg-soft: #1a1a3a;
+  --color-text-accent: #a5a0ff;
+  --color-focus-ring: rgba(165, 160, 255, 0.28);
+  --color-success: #3fb950;
+  --color-success-soft: #1a3a2a;
+  --color-danger: #f85149;
+  --color-danger-soft: #4a1215;
+  --color-warning: #d29922;
+  --color-warning-soft: #3d2500;
+  --color-info: #58a6ff;
+  --color-info-soft: #0c2d48;
+  --color-dynamic: #58a6ff;
+
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+}
+
+/* Dark mode scrollbar thumb */
+[data-theme="dark"] .pde-tree-root .pde-tree-treeContainer::-webkit-scrollbar-thumb {
+  background: var(--color-border-default);
+}
+
+[data-theme="dark"] .pde-tree-root .pde-tree-treeContainer::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-strong);
+}
