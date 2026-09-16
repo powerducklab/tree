@@ -543,7 +543,7 @@ function NodeRendererInner<TMetadata>(props: NodeRendererProps<TMetadata>) {
     <div
       ref={(element) => onNodeRef(node.id, element)}
       className={rowClassName}
-      style={{ paddingLeft: `${depth * 12 + 8}px` }}
+      style={{ paddingLeft: `${depth * 12 + 4}px` }}
       role="treeitem"
       aria-expanded={isBranch ? isExpanded : undefined}
       aria-selected={isSelected}
