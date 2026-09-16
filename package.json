@@ -40,6 +40,7 @@
   ],
   "scripts": {
     "build": "tsup",
+    "postbuild": "ln -sf /Users/electron/powerduck-react/node_modules/react node_modules/react && ln -sf /Users/electron/powerduck-react/node_modules/react-dom node_modules/react-dom",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
