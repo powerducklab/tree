@@ -68,7 +68,7 @@
     }
   },
   "dependencies": {
-    "@powerduck/openapi-parser": "^0.3.3",
+    "@powerduck/openapi-parser": "^0.3.5",
     "react-icons": "^5.7.0"
   },
   "devDependencies": {
