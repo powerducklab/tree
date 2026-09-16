@@ -45,7 +45,7 @@ export interface FilterTreeOptions {
  * Options for building expansion paths.
  */
 export interface ExpandOptions {
-  /** Maximum depth to expand. 0 means only the root. Defaults to Infinity. */
+  /** Maximum depth to expand. Root nodes have depth 1; 0 expands nothing. Defaults to Infinity. */
   maxDepth?: number;
   /** When true, only expand nodes that have children. Defaults to true. */
   onlyWithChildren?: boolean;

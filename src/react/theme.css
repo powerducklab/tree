@@ -1,0 +1,63 @@
+/* Host tokens take precedence; standalone fallbacks match powerduck-react. */
+.pde-tree-root {
+  --tree-color-accent: var(--color-accent, #f28c28);
+  --tree-color-accent-active: var(--color-accent-active, #c9640d);
+  --tree-color-accent-bg: var(--color-accent-bg, #fff8ef);
+  --tree-color-accent-bg-soft: var(--color-accent-bg-soft, #f0f5ff);
+  --tree-color-border-default: var(--color-border-default, #e0e4e8);
+  --tree-color-border-strong: var(--color-border-strong, #ccd2d8);
+  --tree-color-border-subtle: var(--color-border-subtle, #eceff1);
+  --tree-color-danger: var(--color-danger, #FF0000);
+  --tree-color-danger-soft: var(--color-danger-soft, #fff2f1);
+  --tree-color-dynamic: var(--color-dynamic, #4d7ec8);
+  --tree-color-focus-ring: var(--color-focus-ring, rgba(242, 140, 40, 0.28));
+  --tree-color-info: var(--color-info, #4f79bf);
+  --tree-color-info-soft: var(--color-info-soft, #f0f5ff);
+  --tree-color-success: var(--color-success, #428961);
+  --tree-color-success-soft: var(--color-success-soft, #eff8f2);
+  --tree-color-surface: var(--color-surface, #ffffff);
+  --tree-color-surface-hover: var(--color-surface-hover, #f4f5f6);
+  --tree-color-surface-selected: var(--color-surface-selected, #eef0f2);
+  --tree-color-surface-subtle: var(--color-surface-subtle, #f8f9fa);
+  --tree-color-text-accent: var(--color-text-accent, #d97818);
+  --tree-color-text-disabled: var(--color-text-disabled, #c2c6cc);
+  --tree-color-text-primary: var(--color-text-primary, #26282b);
+  --tree-color-text-secondary: var(--color-text-secondary, #6f747c);
+  --tree-color-text-tertiary: var(--color-text-tertiary, #989da5);
+  --tree-color-warning: var(--color-warning, #d98a22);
+  --tree-color-warning-soft: var(--color-warning-soft, #fff8e8);
+  --tree-shadow-lg: var(--shadow-lg, 0 16px 40px rgba(28, 32, 36, 0.1),
+        0 4px 12px rgba(28, 32, 36, 0.05));
+}
+
+.pde-tree-root[data-theme="dark"],
+[data-theme="dark"] .pde-tree-root:not([data-theme="light"]) {
+  --tree-color-accent: var(--color-accent, #f4a04a);
+  --tree-color-accent-active: var(--color-accent-active, #df7d20);
+  --tree-color-accent-bg: var(--color-accent-bg, #2d2419);
+  --tree-color-accent-bg-soft: var(--color-accent-bg-soft, #1d304f);
+  --tree-color-border-default: var(--color-border-default, #3b4149);
+  --tree-color-border-strong: var(--color-border-strong, #525a65);
+  --tree-color-border-subtle: var(--color-border-subtle, #2d3239);
+  --tree-color-danger: var(--color-danger, #ef7c7c);
+  --tree-color-danger-soft: var(--color-danger-soft, #402020);
+  --tree-color-dynamic: var(--color-dynamic, #7eb0f3);
+  --tree-color-focus-ring: var(--color-focus-ring, rgba(244, 160, 74, 0.36));
+  --tree-color-info: var(--color-info, #82aef2);
+  --tree-color-info-soft: var(--color-info-soft, #1d304f);
+  --tree-color-success: var(--color-success, #67bd89);
+  --tree-color-success-soft: var(--color-success-soft, #1c3928);
+  --tree-color-surface: var(--color-surface, #1f2125);
+  --tree-color-surface-hover: var(--color-surface-hover, #2b2f35);
+  --tree-color-surface-selected: var(--color-surface-selected, #343941);
+  --tree-color-surface-subtle: var(--color-surface-subtle, #25282d);
+  --tree-color-text-accent: var(--color-text-accent, #ffc98c);
+  --tree-color-text-disabled: var(--color-text-disabled, #626b76);
+  --tree-color-text-primary: var(--color-text-primary, #edf0f3);
+  --tree-color-text-secondary: var(--color-text-secondary, #b8bec7);
+  --tree-color-text-tertiary: var(--color-text-tertiary, #89919c);
+  --tree-color-warning: var(--color-warning, #e7b45c);
+  --tree-color-warning-soft: var(--color-warning-soft, #382f19);
+  --tree-shadow-lg: var(--shadow-lg, 0 18px 44px rgba(0, 0, 0, 0.42),
+        0 6px 16px rgba(0, 0, 0, 0.22));
+}

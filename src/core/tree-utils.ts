@@ -1,643 +1,191 @@
-import type {
-  ExpandOptions,
-  FilterTreeOptions,
-  TreeNode,
-  TreePath,
-} from "./types";
+import type { ExpandOptions, FilterTreeOptions, TreeNode, TreePath } from "./types";
 
-/* -------------------------------------------------------------------------- */
-/* Type guards                                                                */
-/* -------------------------------------------------------------------------- */
-
-export function isTreeNode<TMetadata>(
-  value: TreeNode<TMetadata> | null | undefined,
-): value is TreeNode<TMetadata> {
+export function isTreeNode<T>(value: TreeNode<T> | null | undefined): value is TreeNode<T> {
   return value !== null && value !== undefined;
 }
 
-/* -------------------------------------------------------------------------- */
-/* Traversal                                                                  */
-/* -------------------------------------------------------------------------- */
+interface Entry<T> {
+  node: TreeNode<T>;
+  parent?: Entry<T>;
+  depth: number;
+}
 
-/**
- * Finds a node by id in a tree. Returns undefined if not found.
- */
-export function findNode<TMetadata>(
-  nodes: TreeNode<TMetadata>[],
-  id: string,
-): TreeNode<TMetadata> | undefined {
-  for (const node of nodes) {
-    if (node.id === id) {
-      return node;
-    }
-
-    if (node.children?.length) {
-      const found = findNode(node.children, id);
-
-      if (found) {
-        return found;
-      }
+/** Iterative pre-order traversal. Repeated object references are visited once. */
+function* entries<T>(nodes: TreeNode<T>[], maxDepth = Infinity): Generator<Entry<T>> {
+  const seen = new Set<TreeNode<T>>();
+  const stack: Entry<T>[] = [];
+  for (let i = nodes.length - 1; i >= 0; i--) stack.push({ node: nodes[i]!, depth: 1 });
+  while (stack.length) {
+    const entry = stack.pop()!;
+    if (seen.has(entry.node) || entry.depth > maxDepth) continue;
+    seen.add(entry.node);
+    yield entry;
+    const children = entry.node.children ?? [];
+    for (let i = children.length - 1; i >= 0; i--) {
+      stack.push({ node: children[i]!, parent: entry, depth: entry.depth + 1 });
     }
   }
+}
 
+export function findNode<T>(nodes: TreeNode<T>[], id: string): TreeNode<T> | undefined {
+  for (const { node } of entries(nodes)) if (node.id === id) return node;
   return undefined;
 }
 
-/**
- * Finds the full path from root to the node with the given id.
- * Returns null if the node is not found.
- */
-export function findPath<TMetadata>(
-  nodes: TreeNode<TMetadata>[],
-  id: string,
-  ancestors: TreeNode<TMetadata>[] = [],
-): TreePath<TMetadata> | null {
-  for (const node of nodes) {
-    const path = [...ancestors, node];
-
-    if (node.id === id) {
-      return {
-        nodes: path,
-        target: node,
-        parent: ancestors[ancestors.length - 1],
-        ancestorIds: ancestors.map((ancestor) => ancestor.id),
-      };
-    }
-
-    if (node.children?.length) {
-      const found = findPath(node.children, id, path);
-
-      if (found) {
-        return found;
-      }
-    }
+export function findPath<T>(nodes: TreeNode<T>[], id: string, ancestors: TreeNode<T>[] = []): TreePath<T> | null {
+  for (const entry of entries(nodes)) {
+    if (entry.node.id !== id) continue;
+    const path: TreeNode<T>[] = [];
+    let current: Entry<T> | undefined = entry;
+    while (current) { path.push(current.node); current = current.parent; }
+    path.reverse();
+    const fullPath = [...ancestors, ...path];
+    return { nodes: fullPath, target: entry.node, parent: fullPath[fullPath.length - 2], ancestorIds: fullPath.slice(0, -1).map((node) => node.id) };
   }
-
   return null;
 }
 
-/**
- * Returns all leaf nodes (nodes with no children).
- */
-export function getLeaves<TMetadata>(
-  nodes: TreeNode<TMetadata>[],
-): TreeNode<TMetadata>[] {
-  const leaves: TreeNode<TMetadata>[] = [];
-
-  const visit = (node: TreeNode<TMetadata>): void => {
-    if (!node.children?.length) {
-      leaves.push(node);
-      return;
-    }
-
-    for (const child of node.children) {
-      visit(child);
-    }
-  };
-
-  for (const node of nodes) {
-    visit(node);
-  }
-
-  return leaves;
-}
-
-/**
- * Returns the total number of nodes in the tree.
- */
-export function countNodes<TMetadata>(nodes: TreeNode<TMetadata>[]): number {
-  let count = 0;
-
-  const visit = (node: TreeNode<TMetadata>): void => {
-    count += 1;
-
-    for (const child of node.children ?? []) {
-      visit(child);
-    }
-  };
-
-  for (const node of nodes) {
-    visit(node);
-  }
-
-  return count;
-}
-
-/**
- * Returns the maximum depth of the tree. Root-level nodes are depth 1.
- */
-export function getMaxDepth<TMetadata>(nodes: TreeNode<TMetadata>[]): number {
-  let maxDepth = 0;
-
-  const visit = (node: TreeNode<TMetadata>, depth: number): void => {
-    maxDepth = Math.max(maxDepth, depth);
-
-    for (const child of node.children ?? []) {
-      visit(child, depth + 1);
-    }
-  };
-
-  for (const node of nodes) {
-    visit(node, 1);
-  }
-
-  return maxDepth;
-}
-
-/* -------------------------------------------------------------------------- */
-/* Sorting                                                                    */
-/* -------------------------------------------------------------------------- */
-
-/**
- * Sorts nodes by order (ascending), then by name (locale-aware, numeric).
- * Nodes without an order value sort after those with one.
- *
- * Returns a new array; does not mutate the input.
- */
-export function sortNodes<TMetadata>(
-  nodes: TreeNode<TMetadata>[],
-): TreeNode<TMetadata>[] {
-  return [...nodes].sort((left, right) => {
-    const leftOrder = left.order ?? Number.MAX_SAFE_INTEGER;
-    const rightOrder = right.order ?? Number.MAX_SAFE_INTEGER;
-
-    if (leftOrder !== rightOrder) {
-      return leftOrder - rightOrder;
-    }
-
-    const nameDifference = left.name.localeCompare(right.name, "en-US", {
-      numeric: true,
-      sensitivity: "base",
-    });
-
-    return nameDifference || left.id.localeCompare(right.id);
-  });
-}
-
-/**
- * Recursively sorts all nodes in the tree by order, then name.
- * Returns a new tree; does not mutate the input.
- */
-export function sortTree<TMetadata>(
-  nodes: TreeNode<TMetadata>[],
-): TreeNode<TMetadata>[] {
-  return sortNodes(nodes).map((node) =>
-    node.children?.length
-      ? { ...node, children: sortTree(node.children) }
-      : node,
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/* Filtering                                                                  */
-/* -------------------------------------------------------------------------- */
-
-/**
- * Filters a tree by query. Matching nodes and (optionally) their ancestors
- * are retained. Returns a new tree; does not mutate the input.
- *
- * When no query is provided, the original nodes are returned unchanged.
- */
-export function filterTree<TMetadata>(
-  nodes: TreeNode<TMetadata>[],
-  options: FilterTreeOptions,
-): TreeNode<TMetadata>[] {
-  const query = options.query.trim().toLowerCase();
-
-  if (!query) {
-    return nodes;
-  }
-
-  const keepAncestors = options.keepAncestors ?? true;
-
-  const matches = (node: TreeNode<TMetadata>): boolean =>
-    node.name.toLowerCase().includes(query) ||
-    node.id.toLowerCase().includes(query);
-
-  const visit = (node: TreeNode<TMetadata>): TreeNode<TMetadata> | null => {
-    const children = (node.children ?? [])
-      .map(visit)
-      .filter(isTreeNode);
-
-    const nodeMatches = matches(node);
-
-    if (!nodeMatches && !children.length) {
-      return null;
-    }
-
-    if (!keepAncestors && !nodeMatches) {
-      return null;
-    }
-
-    if (children.length === (node.children?.length ?? 0)) {
-      return node;
-    }
-
-    return { ...node, children };
-  };
-
-  return nodes.map(visit).filter(isTreeNode);
-}
-
-/* -------------------------------------------------------------------------- */
-/* Expansion                                                                  */
-/* -------------------------------------------------------------------------- */
-
-/**
- * Returns the IDs of all nodes that should be expanded based on options.
- *
- * @param nodes - The root nodes.
- * @param options - maxDepth (default Infinity), onlyWithChildren (default true).
- */
-export function getExpandableIds<TMetadata>(
-  nodes: TreeNode<TMetadata>[],
-  options: ExpandOptions = {},
-): string[] {
-  const maxDepth = options.maxDepth ?? Infinity;
-  const onlyWithChildren = options.onlyWithChildren ?? true;
-  const ids: string[] = [];
-
-  const visit = (node: TreeNode<TMetadata>, depth: number): void => {
-    if (depth > maxDepth) {
-      return;
-    }
-
-    const hasChildren = (node.children?.length ?? 0) > 0;
-
-    if (!onlyWithChildren || hasChildren) {
-      ids.push(node.id);
-    }
-
-    for (const child of node.children ?? []) {
-      visit(child, depth + 1);
-    }
-  };
-
-  for (const node of nodes) {
-    visit(node, 1);
-  }
-
-  return ids;
-}
-
-/**
- * Returns the IDs of all branch nodes (nodes with at least one child).
- */
-export function getBranchIds<TMetadata>(
-  nodes: TreeNode<TMetadata>[],
-): string[] {
-  const ids: string[] = [];
-
-  const visit = (node: TreeNode<TMetadata>): void => {
-    const children = node.children;
-
-    if (!children || children.length === 0) {
-      return;
-    }
-
-    ids.push(node.id);
-
-    for (const child of children) {
-      visit(child);
-    }
-  };
-
-  for (const node of nodes) {
-    visit(node);
-  }
-
-  return ids;
-}
-
-/* -------------------------------------------------------------------------- */
-/* Flattening                                                                 */
-/* -------------------------------------------------------------------------- */
-
-/**
- * Flattens a tree into a list of nodes with their depth.
- * Parent nodes appear before their children (pre-order traversal).
- */
-export function flattenTree<TMetadata>(
-  nodes: TreeNode<TMetadata>[],
-): Array<{ node: TreeNode<TMetadata>; depth: number }> {
-  const result: Array<{ node: TreeNode<TMetadata>; depth: number }> = [];
-
-  const visit = (node: TreeNode<TMetadata>, depth: number): void => {
-    result.push({ node, depth });
-
-    for (const child of node.children ?? []) {
-      visit(child, depth + 1);
-    }
-  };
-
-  for (const node of nodes) {
-    visit(node, 1);
-  }
-
+export function getLeaves<T>(nodes: TreeNode<T>[]): TreeNode<T>[] {
+  const result: TreeNode<T>[] = [];
+  for (const { node } of entries(nodes)) if (!node.children?.length) result.push(node);
   return result;
 }
 
-/* -------------------------------------------------------------------------- */
-/* Mutation helpers (immutable)                                              */
-/* -------------------------------------------------------------------------- */
-
-/**
- * Returns a new tree with the node at the given id replaced.
- * If the id is not found, the original tree is returned unchanged.
- */
-export function updateNode<TMetadata>(
-  nodes: TreeNode<TMetadata>[],
-  id: string,
-  updater: (node: TreeNode<TMetadata>) => TreeNode<TMetadata>,
-): TreeNode<TMetadata>[] {
-  let changed = false;
-
-  const result = nodes.map((node) => {
-    if (node.id === id) {
-      changed = true;
-      return updater(node);
-    }
-
-    if (node.children?.length) {
-      const updatedChildren = updateNode(node.children, id, updater);
-
-      if (updatedChildren !== node.children) {
-        changed = true;
-        return { ...node, children: updatedChildren };
-      }
-    }
-
-    return node;
-  });
-
-  return changed ? result : nodes;
+export function countNodes<T>(nodes: TreeNode<T>[]): number {
+  let count = 0;
+  for (const _entry of entries(nodes)) count++;
+  return count;
 }
 
-/**
- * Returns a new tree with the node at the given id removed.
- * If the id is not found, the original tree is returned unchanged.
- */
-export function removeNode<TMetadata>(
-  nodes: TreeNode<TMetadata>[],
-  id: string,
-): TreeNode<TMetadata>[] {
-  const result: TreeNode<TMetadata>[] = [];
-  let changed = false;
+export function getMaxDepth<T>(nodes: TreeNode<T>[]): number {
+  let depth = 0;
+  for (const entry of entries(nodes)) depth = Math.max(depth, entry.depth);
+  return depth;
+}
 
-  for (const node of nodes) {
-    if (node.id === id) {
-      changed = true;
+const nameCollator = new Intl.Collator("en-US", { numeric: true, sensitivity: "base" });
+export function sortNodes<T>(nodes: TreeNode<T>[]): TreeNode<T>[] {
+  return [...nodes].sort((left, right) => {
+    const order = (left.order ?? Number.MAX_SAFE_INTEGER) - (right.order ?? Number.MAX_SAFE_INTEGER);
+    return (Number.isNaN(order) ? 0 : order) || nameCollator.compare(left.name, right.name) || left.id.localeCompare(right.id);
+  });
+}
+
+/** Post-order transformation without recursion. Cyclic child edges are omitted. */
+function transform<T>(nodes: TreeNode<T>[], visit: (node: TreeNode<T>) => TreeNode<T> | null,
+  descend: (node: TreeNode<T>) => boolean = () => true): TreeNode<T>[] {
+  type Frame = { source: TreeNode<T>[]; output: TreeNode<T>[]; index: number; owner?: TreeNode<T> };
+  const active = new Set<TreeNode<T>>();
+  const completed = new Map<TreeNode<T>, TreeNode<T> | null>();
+  const stack: Frame[] = [{ source: nodes, output: [], index: 0 }];
+  while (stack.length) {
+    const frame = stack[stack.length - 1]!;
+    if (frame.index < frame.source.length) {
+      const node = frame.source[frame.index++]!;
+      if (active.has(node)) continue;
+      if (completed.has(node)) {
+        const cached = completed.get(node);
+        if (cached) frame.output.push(cached);
+      } else if (node.children?.length && descend(node)) {
+        active.add(node);
+        stack.push({ source: node.children, output: [], index: 0, owner: node });
+      } else {
+        const result = visit(node);
+        completed.set(node, result);
+        if (result) frame.output.push(result);
+      }
       continue;
     }
-
-    if (node.children?.length) {
-      const updatedChildren = removeNode(node.children, id);
-
-      if (updatedChildren !== node.children) {
-        changed = true;
-        result.push({ ...node, children: updatedChildren });
-        continue;
-      }
-    }
-
-    result.push(node);
+    stack.pop();
+    const children = frame.source.length === frame.output.length && frame.source.every((node, i) => node === frame.output[i])
+      ? frame.source : frame.output;
+    if (!frame.owner) return children;
+    const node = frame.owner;
+    const result = visit(children === node.children ? node : { ...node, children });
+    active.delete(node);
+    completed.set(node, result);
+    if (result) stack[stack.length - 1]!.output.push(result);
   }
-
-  return changed ? result : nodes;
+  return nodes;
 }
 
-/**
- * Returns a new tree with a child inserted at the given parent id.
- * If the parent id is not found, the original tree is returned unchanged.
- */
-export function insertChild<TMetadata>(
-  nodes: TreeNode<TMetadata>[],
-  parentId: string,
-  child: TreeNode<TMetadata>,
-): TreeNode<TMetadata>[] {
-  let changed = false;
+export function sortTree<T>(nodes: TreeNode<T>[]): TreeNode<T>[] {
+  return sortNodes(transform(nodes, (node) => node.children?.length ? { ...node, children: sortNodes(node.children) } : node));
+}
 
-  const result = nodes.map((node) => {
-    if (node.id === parentId) {
-      changed = true;
-      return {
-        ...node,
-        children: [...(node.children ?? []), child],
-      };
-    }
-
-    if (node.children?.length) {
-      const updatedChildren = insertChild(node.children, parentId, child);
-
-      if (updatedChildren !== node.children) {
-        changed = true;
-        return { ...node, children: updatedChildren };
-      }
-    }
-
-    return node;
+export function filterTree<T>(nodes: TreeNode<T>[], options: FilterTreeOptions): TreeNode<T>[] {
+  const query = options.query.trim().toLowerCase();
+  if (!query) return nodes;
+  return transform(nodes, (node) => {
+    const matches = node.name.toLowerCase().includes(query) || node.id.toLowerCase().includes(query);
+    return matches || ((options.keepAncestors ?? true) && node.children?.length) ? node : null;
   });
-
-  return changed ? result : nodes;
 }
 
-/* -------------------------------------------------------------------------- */
-/* Reordering                                                                 */
-/* -------------------------------------------------------------------------- */
+export function getExpandableIds<T>(nodes: TreeNode<T>[], options: ExpandOptions = {}): string[] {
+  const result: string[] = [];
+  for (const { node, depth } of entries(nodes, options.maxDepth ?? Infinity)) {
+    if (depth <= (options.maxDepth ?? Infinity) && (!(options.onlyWithChildren ?? true) || node.children?.length)) result.push(node.id);
+  }
+  return result;
+}
 
-/**
- * Result of a reorder operation.
- */
-export interface ReorderResult<TMetadata> {
-  /** The reordered tree. */
-  nodes: TreeNode<TMetadata>[];
-  /** The moved node. */
-  moved: TreeNode<TMetadata>;
-  /** ID of the parent containing the moved node, or null for root. */
+export function getBranchIds<T>(nodes: TreeNode<T>[]): string[] {
+  return getExpandableIds(nodes);
+}
+
+export function flattenTree<T>(nodes: TreeNode<T>[]): Array<{ node: TreeNode<T>; depth: number }> {
+  return Array.from(entries(nodes), ({ node, depth }) => ({ node, depth }));
+}
+
+export function updateNode<T>(nodes: TreeNode<T>[], id: string, updater: (node: TreeNode<T>) => TreeNode<T>): TreeNode<T>[] {
+  return transform(nodes, (node) => node.id === id ? updater(node) : node, (node) => node.id !== id);
+}
+
+export function removeNode<T>(nodes: TreeNode<T>[], id: string): TreeNode<T>[] {
+  return transform(nodes, (node) => node.id === id ? null : node, (node) => node.id !== id);
+}
+
+export function insertChild<T>(nodes: TreeNode<T>[], parentId: string, child: TreeNode<T>): TreeNode<T>[] {
+  return updateNode(nodes, parentId, (node) => ({ ...node, children: [...(node.children ?? []), child] }));
+}
+
+export interface ReorderResult<T> {
+  nodes: TreeNode<T>[];
+  moved: TreeNode<T>;
   parentId: string | null;
-  /** Original index within the parent's children. */
   fromIndex: number;
-  /** New index within the parent's children. */
   toIndex: number;
 }
 
-/**
- * Moves a node to a new position within the same parent.
- *
- * Returns the reordered tree and metadata about the move. If the node id
- * is not found, returns null.
- */
-export function reorderNode<TMetadata>(
-  nodes: TreeNode<TMetadata>[],
-  nodeId: string,
-  toIndex: number,
-): ReorderResult<TMetadata> | null {
-  const findParentArray = (
-    currentNodes: TreeNode<TMetadata>[],
-    parentId: string | null,
-  ): {
-    array: TreeNode<TMetadata>[];
-    index: number;
-    parentId: string | null;
-  } | null => {
-    const index = currentNodes.findIndex((node) => node.id === nodeId);
-
-    if (index !== -1) {
-      return { array: currentNodes, index, parentId };
-    }
-
-    for (const node of currentNodes) {
-      if (node.children?.length) {
-        const found = findParentArray(node.children, node.id);
-
-        if (found) {
-          return found;
-        }
-      }
-    }
-
-    return null;
-  };
-
-  const location = findParentArray(nodes, null);
-
-  if (!location) {
-    return null;
-  }
-
-  const { array, index: fromIndex, parentId } = location;
-  const clampedToIndex = Math.max(0, Math.min(toIndex, array.length - 1));
-
-  if (clampedToIndex === fromIndex) {
-    return {
-      nodes,
-      moved: array[fromIndex]!,
-      parentId,
-      fromIndex,
-      toIndex: fromIndex,
-    };
-  }
-
-  const reorderedArray = [...array];
-  const [moved] = reorderedArray.splice(fromIndex, 1);
-  reorderedArray.splice(clampedToIndex, 0, moved!);
-
-  const updateParent = (
-    currentNodes: TreeNode<TMetadata>[],
-  ): TreeNode<TMetadata>[] => {
-    if (parentId === null) {
-      return reorderedArray;
-    }
-
-    return currentNodes.map((node) => {
-      if (node.id === parentId) {
-        return { ...node, children: reorderedArray };
-      }
-
-      if (node.children?.length) {
-        return { ...node, children: updateParent(node.children) };
-      }
-
-      return node;
-    });
-  };
-
-  return {
-    nodes: updateParent(nodes),
-    moved: moved!,
-    parentId,
-    fromIndex,
-    toIndex: clampedToIndex,
-  };
+function clampIndex(index: number, length: number): number {
+  return Math.max(0, Math.min(Number.isNaN(index) ? 0 : Math.trunc(index), length));
 }
 
-/**
- * Moves a node to a different parent.
- *
- * Returns the new tree, or null if either the source or target is not found.
- */
-export function moveNode<TMetadata>(
-  nodes: TreeNode<TMetadata>[],
-  nodeId: string,
-  targetParentId: string | null,
-  targetIndex?: number,
-): TreeNode<TMetadata>[] | null {
-  let removedNode: TreeNode<TMetadata> | null = null;
+export function reorderNode<T>(nodes: TreeNode<T>[], nodeId: string, toIndex: number): ReorderResult<T> | null {
+  const path = findPath(nodes, nodeId);
+  if (!path) return null;
+  const siblings = path.parent?.children ?? nodes;
+  const fromIndex = siblings.indexOf(path.target);
+  const targetIndex = clampIndex(toIndex, siblings.length - 1);
+  const result = { nodes, moved: path.target, parentId: path.parent?.id ?? null, fromIndex, toIndex: targetIndex };
+  if (targetIndex === fromIndex) return result;
+  const reordered = [...siblings];
+  reordered.splice(fromIndex, 1);
+  reordered.splice(targetIndex, 0, path.target);
+  return { ...result, nodes: path.parent ? updateNode(nodes, path.parent.id, (node) => ({ ...node, children: reordered })) : reordered };
+}
 
-  /* Guard against circular references: cannot move a node into its own descendant. */
-  if (targetParentId !== null) {
-    const sourcePath = findPath(nodes, nodeId);
-
-    if (sourcePath && sourcePath.ancestorIds.includes(targetParentId)) {
-      return null;
-    }
-  }
-
-  const removeFromTree = (
-    currentNodes: TreeNode<TMetadata>[],
-  ): TreeNode<TMetadata>[] => {
-    const result: TreeNode<TMetadata>[] = [];
-    let changed = false;
-
-    for (const node of currentNodes) {
-      if (node.id === nodeId) {
-        removedNode = node;
-        changed = true;
-        continue;
-      }
-
-      if (node.children?.length) {
-        const updatedChildren = removeFromTree(node.children);
-
-        if (updatedChildren !== node.children) {
-          changed = true;
-          result.push({ ...node, children: updatedChildren });
-          continue;
-        }
-      }
-
-      result.push(node);
-    }
-
-    return changed ? result : currentNodes;
-  };
-
-  const treeAfterRemoval = removeFromTree(nodes);
-
-  if (!removedNode) {
-    return null;
-  }
-
-  if (targetParentId === null) {
-    const index = targetIndex ?? treeAfterRemoval.length;
-    const result = [...treeAfterRemoval];
-    result.splice(Math.max(0, Math.min(index, result.length)), 0, removedNode);
+/** Move indices refer to the destination children after removal of the source. */
+export function moveNode<T>(nodes: TreeNode<T>[], nodeId: string, targetParentId: string | null, targetIndex?: number): TreeNode<T>[] | null {
+  const source = findNode(nodes, nodeId);
+  if (!source) return null;
+  if (targetParentId !== null && (!findNode(nodes, targetParentId) || findNode([source], targetParentId))) return null;
+  const remaining = removeNode(nodes, nodeId);
+  const insert = (children: TreeNode<T>[]) => {
+    const result = [...children];
+    result.splice(clampIndex(targetIndex ?? result.length, result.length), 0, source);
     return result;
-  }
-
-  let inserted = false;
-
-  const insertIntoTree = (
-    currentNodes: TreeNode<TMetadata>[],
-  ): TreeNode<TMetadata>[] => {
-    return currentNodes.map((node) => {
-      if (node.id === targetParentId) {
-        inserted = true;
-        const children = [...(node.children ?? [])];
-        const index = targetIndex ?? children.length;
-        children.splice(Math.max(0, Math.min(index, children.length)), 0, removedNode!);
-        return { ...node, children };
-      }
-
-      if (node.children?.length) {
-        return { ...node, children: insertIntoTree(node.children) };
-      }
-
-      return node;
-    });
   };
-
-  const result = insertIntoTree(treeAfterRemoval);
-
-  return inserted ? result : null;
+  return targetParentId === null ? insert(remaining) : updateNode(remaining, targetParentId, (node) => ({ ...node, children: insert(node.children ?? []) }));
 }

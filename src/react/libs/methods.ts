@@ -22,5 +22,6 @@ export const METHOD_LABEL_MAP: Record<string, string> = {
  */
 export function getMethodLabel(method: string): string {
   const normalized = method.toLowerCase().trim();
-  return METHOD_LABEL_MAP[normalized] ?? normalized.slice(0, 4).toUpperCase();
+  return Object.prototype.hasOwnProperty.call(METHOD_LABEL_MAP, normalized)
+    ? METHOD_LABEL_MAP[normalized]! : normalized.slice(0, 4).toUpperCase();
 }

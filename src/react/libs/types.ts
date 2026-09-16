@@ -115,6 +115,9 @@ export interface TreeProps<TMetadata = unknown> {
   /** Inline styles. */
   style?: React.CSSProperties;
 
+  /** Optional standalone theme. Omit to inherit host theme tokens. */
+  theme?: "light" | "dark";
+
   /** Size variant. Default "sm". */
   size?: "xs" | "sm" | "md";
 
@@ -127,6 +130,9 @@ export interface TreeProps<TMetadata = unknown> {
 
   /** Whether to show indent guides. Default true. */
   showIndentGuides?: boolean;
+
+  /** Window fixed-height rows above 500 visible nodes by default. Disabled for doc variants and custom row renderers. */
+  virtualized?: boolean | "auto";
 
   /** Maximum height before scrolling. Default undefined (no limit). */
   maxHeight?: number | string;

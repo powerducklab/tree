@@ -6,7 +6,7 @@ import { getBranchIds, getExpandableIds } from "../../core/tree-utils";
 /**
  * Manages tree expansion state.
  *
- * Supports controlled (via onExpandedChange) and uncontrolled usage.
+ * Keeps local state and notifies consumers through onExpandedChange.
  * Provides expandAll, collapseAll, and expandToDepth helpers.
  */
 export function useTreeExpansion<TMetadata>(
@@ -21,7 +21,7 @@ export function useTreeExpansion<TMetadata>(
     options;
 
   const initialExpanded = useMemo(() => {
-    if (defaultExpandedIds && defaultExpandedIds.length > 0) {
+    if (defaultExpandedIds !== undefined) {
       return [...defaultExpandedIds];
     }
 
@@ -41,15 +41,20 @@ export function useTreeExpansion<TMetadata>(
 
   const allBranchIds = useMemo(() => getBranchIds(nodes), [nodes]);
 
+  const expandedSet = useMemo(() => new Set(expandedIds), [expandedIds]);
+  const expandedRef = useRef(expandedIds);
+  expandedRef.current = expandedIds;
+
   const isAllExpanded = useMemo(
     () =>
       allBranchIds.length > 0 &&
-      allBranchIds.every((id) => expandedIds.includes(id)),
-    [allBranchIds, expandedIds],
+      allBranchIds.every((id) => expandedSet.has(id)),
+    [allBranchIds, expandedSet],
   );
 
   const handleExpandedChange = useCallback(
     (nextExpanded: string[]) => {
+      expandedRef.current = nextExpanded;
       setExpandedIds(nextExpanded);
       onExpandedChange?.(nextExpanded);
     },
@@ -58,17 +63,11 @@ export function useTreeExpansion<TMetadata>(
 
   const toggleNode = useCallback(
     (id: string) => {
-      setExpandedIds((current) => {
-        const isExpanded = current.includes(id);
-        const next = isExpanded
-          ? current.filter((expandedId) => expandedId !== id)
-          : [...current, id];
-
-        onExpandedChange?.(next);
-        return next;
-      });
+      const current = expandedRef.current;
+      const next = current.includes(id) ? current.filter((value) => value !== id) : [...current, id];
+      handleExpandedChange(next);
     },
-    [onExpandedChange],
+    [handleExpandedChange],
   );
 
   const expandAll = useCallback(() => {
@@ -105,7 +104,7 @@ export function useTreeExpansion<TMetadata>(
     const element = nodeElementRefs.current.get(id);
 
     if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      element.scrollIntoView?.({ behavior: "auto", block: "nearest" });
     }
   }, []);
 
@@ -120,5 +119,6 @@ export function useTreeExpansion<TMetadata>(
     allBranchIds,
     setNodeElementRef,
     scrollToNode,
+    nodeElementRefs,
   };
 }

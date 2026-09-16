@@ -1,5 +1,5 @@
 import type { TreeNode } from "../../core/types";
-import { getBranchIds, getExpandableIds } from "../../core/tree-utils";
+import { findPath, getBranchIds, getExpandableIds } from "../../core/tree-utils";
 
 /**
  * Computes the initially expanded node IDs based on defaultExpandDepth
@@ -10,7 +10,7 @@ export function computeInitialExpanded<TMetadata>(
   defaultExpandDepth: number,
   defaultExpandedIds?: string[],
 ): string[] {
-  if (defaultExpandedIds && defaultExpandedIds.length > 0) {
+  if (defaultExpandedIds !== undefined) {
     return [...defaultExpandedIds];
   }
 
@@ -42,21 +42,7 @@ export function findNodePath<TMetadata>(
   id: string,
   ancestors: TreeNode<TMetadata>[] = [],
 ): Array<TreeNode<TMetadata>> | null {
-  for (const node of nodes) {
-    if (node.id === id) {
-      return [...ancestors, node];
-    }
-
-    if (node.children?.length) {
-      const found = findNodePath(node.children, id, [...ancestors, node]);
-
-      if (found) {
-        return found;
-      }
-    }
-  }
-
-  return null;
+  return findPath(nodes, id, ancestors)?.nodes ?? null;
 }
 
 /**

@@ -70,6 +70,8 @@ export type SchemaTreeNode = TreeNode<SchemaNodeMetadata>;
 export interface SchemaTreeOptions {
   /** Maximum recursion depth. Default 8. Prevents infinite loops on circular schemas. */
   maxDepth?: number;
+  /** Maximum generated nodes, including combinator groups. Default 10,000. */
+  maxNodes?: number;
   /** Include deprecated properties. Default true. */
   showDeprecated?: boolean;
   /** Expand allOf/anyOf/oneOf branches. Default true. */
@@ -89,6 +91,7 @@ export interface SchemaTreeBuildResult {
 
 const DEFAULT_OPTIONS: Required<SchemaTreeOptions> = {
   maxDepth: 8,
+  maxNodes: 10000,
   showDeprecated: true,
   expandCombinators: true,
   showArrayItems: true,
@@ -202,6 +205,12 @@ interface BuildContext {
   warnings: string[];
   /** Tracks $ref paths to detect circular references. */
   refStack: Set<string>;
+  activeSchemas: Set<JsonRecord>;
+  remaining: number;
+}
+
+function schemaNodeId(path: string[]): string {
+  return path.map((segment) => segment.replace(/[\\.\[\]]/g, (character) => `\\${character}`)).join(".") || "root";
 }
 
 function buildSchemaNode(
@@ -212,6 +221,7 @@ function buildSchemaNode(
   context: BuildContext,
   required: boolean,
 ): SchemaTreeNode {
+  context.remaining--;
   const type = getType(schema);
   const format = getString(schema.format);
   const description = getString(schema.description);
@@ -238,7 +248,7 @@ function buildSchemaNode(
       );
 
       return {
-        id: jsonPath.join(".") || "root",
+        id: schemaNodeId(jsonPath),
         name,
         metadata: {
           ...baseMetadata,
@@ -254,14 +264,16 @@ function buildSchemaNode(
   let children: SchemaTreeNode[] | undefined;
   let isLeaf = isScalarType(type);
 
-  /* Depth limit */
-  if (depth >= context.options.maxDepth) {
+  /* Bound cycles, depth, and total work independently. */
+  const circular = context.activeSchemas.has(schema);
+  if (circular) context.warnings.push(`Circular schema object detected at ${schemaNodeId(jsonPath)}.`);
+  if (circular || depth >= context.options.maxDepth || context.remaining <= 0) {
     if (ref) {
       context.refStack.delete(ref);
     }
 
     return {
-      id: jsonPath.join(".") || "root",
+      id: schemaNodeId(jsonPath),
       name,
       metadata: {
         ...baseMetadata,
@@ -269,6 +281,8 @@ function buildSchemaNode(
       },
     };
   }
+
+  context.activeSchemas.add(schema);
 
   /* Object properties */
   const properties = asRecord(schema.properties);
@@ -282,6 +296,7 @@ function buildSchemaNode(
     const propertyNodes: SchemaTreeNode[] = [];
 
     for (const [propName, propSchema] of Object.entries(properties)) {
+      if (context.remaining <= 0) break;
       const propRecord = asRecord(propSchema);
 
       if (!propRecord) {
@@ -309,7 +324,7 @@ function buildSchemaNode(
   }
 
   /* Array items */
-  if (context.options.showArrayItems && type === "array") {
+  if (context.remaining > 0 && context.options.showArrayItems && type === "array") {
     const items = asRecord(schema.items);
 
     if (items) {
@@ -338,39 +353,45 @@ function buildSchemaNode(
     ];
 
     for (const { key, kind } of combinators) {
+      if (context.remaining <= 0) break;
       const schemas = getArray(schema[key]);
 
       if (!schemas?.length) {
         continue;
       }
 
-      const branchNodes: SchemaTreeNode[] = schemas.map((branch, index) => {
+      context.remaining--;
+      const branchNodes: SchemaTreeNode[] = [];
+      for (let index = 0; index < schemas.length && context.remaining > 0; index++) {
+        const branch = schemas[index];
         const branchRecord = asRecord(branch);
 
         if (!branchRecord) {
-          return {
-            id: `${jsonPath.join(".")}.${key}[${index}]`,
+          context.remaining--;
+          branchNodes.push({
+            id: schemaNodeId([...jsonPath, key, String(index)]),
             name: `[${index}]`,
             metadata: {
               jsonPath: [...jsonPath, key, String(index)],
               kind: "unknown",
               isLeaf: true,
             },
-          };
+          });
+          continue;
         }
 
-        return buildSchemaNode(
+        branchNodes.push(buildSchemaNode(
           `[${index}]`,
           branchRecord,
           [...jsonPath, key, String(index)],
           depth + 1,
           context,
           false,
-        );
-      });
+        ));
+      }
 
       const combinatorNode: SchemaTreeNode = {
-        id: `${jsonPath.join(".")}.${key}`,
+        id: schemaNodeId([...jsonPath, key]),
         name: key,
         children: sortNodes(branchNodes),
         metadata: {
@@ -396,10 +417,11 @@ function buildSchemaNode(
     context.refStack.delete(ref);
   }
 
+  context.activeSchemas.delete(schema);
   return {
-    id: jsonPath.join(".") || "root",
+    id: schemaNodeId(jsonPath),
     name,
-    order: FIELD_ORDER[name],
+    order: Object.prototype.hasOwnProperty.call(FIELD_ORDER, name) ? FIELD_ORDER[name] : undefined,
     metadata: {
       ...baseMetadata,
       isLeaf,
@@ -428,6 +450,10 @@ export function buildSchemaTree(
     ...options,
   };
 
+  resolvedOptions.maxDepth = Number.isFinite(resolvedOptions.maxDepth)
+    ? Math.min(128, Math.max(0, Math.trunc(resolvedOptions.maxDepth))) : DEFAULT_OPTIONS.maxDepth;
+  resolvedOptions.maxNodes = Number.isFinite(resolvedOptions.maxNodes)
+    ? Math.min(100000, Math.max(1, Math.trunc(resolvedOptions.maxNodes))) : DEFAULT_OPTIONS.maxNodes;
   const warnings: string[] = [];
   const schemaRecord = asRecord(schema);
 
@@ -446,6 +472,8 @@ export function buildSchemaTree(
     options: resolvedOptions,
     warnings,
     refStack: new Set<string>(),
+    activeSchemas: new Set<JsonRecord>(),
+    remaining: resolvedOptions.maxNodes,
   };
 
   const root = buildSchemaNode(
@@ -457,6 +485,7 @@ export function buildSchemaTree(
     true,
   );
 
+  if (context.remaining <= 0) warnings.push(`Schema node limit (${resolvedOptions.maxNodes}) reached; remaining branches were omitted.`);
   return {
     root,
     warnings,
@@ -475,19 +504,21 @@ export function findSchemaNodeByPath(
     return root;
   }
 
-  const targetPath = jsonPath.join(".");
+  const targetPath = JSON.stringify(jsonPath);
 
   /* BFS search matching by metadata.jsonPath. */
   const queue: SchemaTreeNode[] = [root];
 
-  while (queue.length > 0) {
-    const node = queue.shift();
+  const seen = new Set<SchemaTreeNode>();
+  for (let cursor = 0; cursor < queue.length; cursor++) {
+    const node = queue[cursor];
 
-    if (!node) {
+    if (!node || seen.has(node)) {
       continue;
     }
 
-    const nodePath = node.metadata?.jsonPath?.join(".");
+    seen.add(node);
+    const nodePath = JSON.stringify(node.metadata?.jsonPath);
 
     if (nodePath === targetPath) {
       return node;

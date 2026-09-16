@@ -554,3 +554,59 @@ npm run typecheck  # Type check with tsc
 ## License
 
 MIT
+
+
+## Quality and interaction updates
+
+The tree inherits `powerduck-react` color tokens without overwriting the host's
+palette. Standalone instances can use `theme="light"` or `theme="dark"`; inherited
+`data-theme` also supplies matching fallback colors. Menus carry the same tokens
+when portalled outside the tree. Search controls, row selection, focus rings,
+buttons, and hover states use the shared palette and radius tokens. Scrollbar
+thumbs appear on hover or keyboard interaction, with visible touch affordances.
+
+Keyboard navigation uses a single row tab stop. Up/Down, Home/End, and Left/Right
+navigate visible rows and branches. Typing a label prefix finds a visible row.
+Enter or Space activates the row. Shift+F10 opens the row's context menu; menu
+arrows skip disabled actions, and Escape closes the menu and returns focus.
+Context-menu separators now appear above their actions rather than replacing them.
+
+For more than 500 visible rows, fixed-height trees automatically render a window
+around the viewport. Set `virtualized={false}` to opt out or `virtualized={true}`
+to enable it for smaller trees. Document variants and custom `renderNode` content
+retain full rendering because their heights may vary. Give the tree a bounded
+parent height or `maxHeight` to benefit from windowing. Row sizing follows `size`;
+custom variable-height rows should disable windowing. Imperative node location
+reveals ancestors, clears search, and scrolls after the new rows are committed.
+
+Core traversal, transformation, and nested-tag assembly avoid recursive stack
+growth. Object-reference cycles terminate safely; transforming malformed graphs
+omits cyclic edges. IDs must still be unique, and caller-owned inputs should be
+treated as immutable. Pass a new tree reference when changing data. Expansion
+callbacks are notifications for local state, not a controlled expansion prop.
+
+Schema generation accepts `maxNodes` (default 10,000; bounded to 1–100,000).
+`maxDepth` defaults to 8 and is bounded to 0–128; non-finite limits use the default.
+Generation warns when the node budget is exhausted or an object cycle is found.
+Literal dots, brackets, and backslashes in schema path segments are escaped in
+node IDs; use `metadata.jsonPath` or `findSchemaNodeByPath` for exact lookup.
+Nested documentation tag groups are limited to 128 levels and 10,000 generated
+groups with a warning.
+
+JSON Patch reorder notifications are emitted only for source arrays whose
+metadata paths match the rendered sibling order. Object-property paths and
+sorted/filtered views do not receive misleading array move patches. Dragging
+rechecks group and drop constraints before committing a move. Native drag and
+drop is a desktop interaction; touch reordering is not implemented.
+
+### Local verification
+
+```sh
+npm run check       # Source language, package and preview types, tests, build
+npm run preview     # Interactive examples at http://127.0.0.1:4174
+npm run benchmark   # Build and compare the old/new sorting comparator
+```
+
+The benchmark reports medians from seven runs over a deterministic shuffled input.
+It measures sorting, traversal, and filtering only, not end-to-end browser latency.
+See [QUALITY.md](./QUALITY.md) for findings, evidence, and remaining limitations.

@@ -11,7 +11,7 @@ export default defineConfig({
   dts: true,
   clean: true,
   sourcemap: false,
-  minify: "terser",
+  minify: true,
   external: [
     "react",
     "react-dom",

@@ -1,3 +1,4 @@
+import { buildTagHierarchy } from "./tag-hierarchy";
 import type { Oas32Document } from "@powerduck/openapi-parser";
 
 import type { TreeNode } from "../core/types";
@@ -275,51 +276,6 @@ function buildOas32NestedTree(
   options: Required<OpenApiTreeOptions>,
   warnings: string[],
 ): OpenApiTreeNode[] {
-  const tagMap = new Map<string, TagDefinition>();
-
-  for (const tag of definitions) {
-    tagMap.set(tag.name, tag);
-  }
-
-  /* Validate parent references and detect cycles. */
-  const validatedParents = new Map<string, string | null>();
-
-  for (const tag of definitions) {
-    if (!tag.parent) {
-      validatedParents.set(tag.name, null);
-      continue;
-    }
-
-    if (!tagMap.has(tag.parent)) {
-      warnings.push(
-        `Tag "${tag.name}" references unknown parent "${tag.parent}", treating as root.`,
-      );
-      validatedParents.set(tag.name, null);
-      continue;
-    }
-
-    /* Cycle detection: walk up the parent chain. */
-    const chain = [tag.name];
-    let current: string | undefined = tag.parent;
-    let hasCycle = false;
-
-    while (current) {
-      if (chain.includes(current)) {
-        hasCycle = true;
-        warnings.push(
-          `Circular tag reference detected: ${chain.join(" -> ")} -> ${current}. Breaking cycle.`,
-        );
-        break;
-      }
-
-      chain.push(current);
-      current = tagMap.get(current)?.parent;
-    }
-
-    validatedParents.set(tag.name, hasCycle ? null : tag.parent);
-  }
-
-  /* Group operations by tag. */
   const operationsByTag = new Map<string, ParsedOperation[]>();
 
   for (const operation of operations) {
@@ -369,40 +325,17 @@ function buildOas32NestedTree(
   };
 
   /* Build parent-child map. */
-  const childrenByParent = new Map<string, TagDefinition[]>();
-
-  for (const tag of definitions) {
-    const parent = validatedParents.get(tag.name) ?? null;
-    const key = parent ?? "__root__";
-    const existing = childrenByParent.get(key) ?? [];
-    existing.push(tag);
-    childrenByParent.set(key, existing);
+  const definedNames = new Set(definitions.map((tag) => tag.name));
+  const allDefinitions = [...definitions];
+  for (const name of operationsByTag.keys()) {
+    if (name !== "Other" && !definedNames.has(name)) allDefinitions.push({ name, displayName: name, raw: {} });
   }
-
-  /* Recursively build the tree. */
-  const buildSubtree = (parentName: string): OpenApiTreeNode[] => {
-    const childTags = childrenByParent.get(parentName) ?? [];
-
-    return sortNodes(
-      childTags.map((tag) => {
-        const node = buildTagNode(tag);
-        const nestedChildren = buildSubtree(tag.name);
-
-        if (nestedChildren.length > 0) {
-          node.children = sortNodes([...(node.children ?? []), ...nestedChildren]);
-        }
-
-        return node;
-      }),
-    );
-  };
-
-  const rootTags = buildSubtree("__root__");
+  const rootTags = buildTagHierarchy(allDefinitions, buildTagNode, warnings);
 
   /* Add untagged operations to "Other" group. */
   const otherOperations = operationsByTag.get("Other") ?? [];
 
-  if (otherOperations.length > 0) {
+  if (otherOperations.length > 0 && !definitions.some((tag) => tag.name === "Other")) {
     const otherChildren: OpenApiTreeNode[] = otherOperations.map(
       (operation) => ({
         id: `op:Other:${operation.id}`,

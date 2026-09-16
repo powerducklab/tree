@@ -1,7 +1,8 @@
+import { buildTagHierarchy } from "./tag-hierarchy";
 import type { Oas32Document } from "@powerduck/openapi-parser";
 
 import type { TreeNode } from "../core/types";
-import { sortNodes } from "../core/tree-utils";
+import { flattenTree, sortNodes } from "../core/tree-utils";
 
 /* -------------------------------------------------------------------------- */
 /* Types                                                                      */
@@ -476,48 +477,6 @@ function buildOas32NestedDocTree(
   options: Required<DocTreeOptions>,
   warnings: string[],
 ): DocTreeNode[] {
-  const tagMap = new Map<string, TagDefinition>();
-
-  for (const tag of definitions) {
-    tagMap.set(tag.name, tag);
-  }
-
-  const validatedParents = new Map<string, string | null>();
-
-  for (const tag of definitions) {
-    if (!tag.parent) {
-      validatedParents.set(tag.name, null);
-      continue;
-    }
-
-    if (!tagMap.has(tag.parent)) {
-      warnings.push(
-        `Tag "${tag.name}" references unknown parent "${tag.parent}", treating as root.`,
-      );
-      validatedParents.set(tag.name, null);
-      continue;
-    }
-
-    const chain = [tag.name];
-    let current: string | undefined = tag.parent;
-    let hasCycle = false;
-
-    while (current) {
-      if (chain.includes(current)) {
-        hasCycle = true;
-        warnings.push(
-          `Circular tag reference detected: ${chain.join(" -> ")} -> ${current}. Breaking cycle.`,
-        );
-        break;
-      }
-
-      chain.push(current);
-      current = tagMap.get(current)?.parent;
-    }
-
-    validatedParents.set(tag.name, hasCycle ? null : tag.parent);
-  }
-
   const operationsByTag = new Map<string, ParsedDocOperation[]>();
 
   for (const operation of operations) {
@@ -554,38 +513,16 @@ function buildOas32NestedDocTree(
     };
   };
 
-  const childrenByParent = new Map<string, TagDefinition[]>();
-
-  for (const tag of definitions) {
-    const parent = validatedParents.get(tag.name) ?? null;
-    const key = parent ?? "__root__";
-    const existing = childrenByParent.get(key) ?? [];
-    existing.push(tag);
-    childrenByParent.set(key, existing);
+  const definedNames = new Set(definitions.map((tag) => tag.name));
+  const allDefinitions = [...definitions];
+  for (const name of operationsByTag.keys()) {
+    if (name !== "Other" && !definedNames.has(name)) allDefinitions.push({ name, displayName: name });
   }
-
-  const buildSubtree = (parentName: string): DocTreeNode[] => {
-    const childTags = childrenByParent.get(parentName) ?? [];
-
-    return sortNodes(
-      childTags.map((tag) => {
-        const node = buildTagNode(tag);
-        const nestedChildren = buildSubtree(tag.name);
-
-        if (nestedChildren.length > 0) {
-          node.children = sortNodes([...(node.children ?? []), ...nestedChildren]);
-        }
-
-        return node;
-      }),
-    );
-  };
-
-  const rootTags = buildSubtree("__root__");
+  const rootTags = buildTagHierarchy(allDefinitions, buildTagNode, warnings);
 
   const otherOperations = operationsByTag.get("Other") ?? [];
 
-  if (otherOperations.length > 0) {
+  if (otherOperations.length > 0 && !definitions.some((tag) => tag.name === "Other")) {
     const otherChildren: DocTreeNode[] = otherOperations.map((operation) =>
       buildDocOperationNode(operation, options, "fallback", "Other"),
     );
@@ -677,20 +614,29 @@ function hasTagGroups(document: JsonRecord): boolean {
   return Array.isArray(document["x-tagGroups"]) && document["x-tagGroups"].length > 0;
 }
 
-function parseTagGroups(raw: unknown): TagGroup[] {
-  if (!Array.isArray(raw)) {
+function parseTagGroups(raw: unknown, warnings: string[], depth = 0, context = { active: new Set<unknown>(), remaining: 10000, warned: false }): TagGroup[] {
+  if (!Array.isArray(raw)) return [];
+  if (depth >= 128 || context.active.has(raw)) {
+    warnings.push("Nested tag groups were truncated at a cycle or the 128-level limit.");
     return [];
   }
+  context.active.add(raw);
 
   const groups: TagGroup[] = [];
 
   for (const item of raw) {
+    if (context.remaining <= 0) {
+      if (!context.warned) warnings.push("Tag group limit (10,000) reached; remaining groups were omitted.");
+      context.warned = true;
+      break;
+    }
     const record = asRecord(item);
 
     if (!record || typeof record.name !== "string") {
       continue;
     }
 
+    context.remaining--;
     const group: TagGroup = { name: record.name };
 
     if (Array.isArray(record.tags)) {
@@ -698,12 +644,13 @@ function parseTagGroups(raw: unknown): TagGroup[] {
     }
 
     if (Array.isArray(record.groups)) {
-      group.groups = parseTagGroups(record.groups);
+      group.groups = parseTagGroups(record.groups, warnings, depth + 1, context);
     }
 
     groups.push(group);
   }
 
+  context.active.delete(raw);
   return groups;
 }
 
@@ -770,6 +717,7 @@ function buildTagGroupNavigation(
   definitions: TagDefinition[],
   operations: ParsedDocOperation[],
   options: Required<DocTreeOptions>,
+  warnings: string[],
 ): DocTreeNode[] {
   const operationsByTag = new Map<string, ParsedDocOperation[]>();
   const tagOrder = new Map<string, number>();
@@ -794,7 +742,7 @@ function buildTagGroupNavigation(
     }
   }
 
-  const groups = parseTagGroups(document["x-tagGroups"]);
+  const groups = parseTagGroups(document["x-tagGroups"], warnings);
   const nodes = groups.map((group) =>
     buildTagGroupDocTree(group, operationsByTag, displayNames, tagOrder, options),
   );
@@ -899,20 +847,15 @@ function buildComponentsSection(
  * `metadata.operationCount` to every node for display badges.
  */
 function addOperationCounts(nodes: DocTreeNode[]): DocTreeNode[] {
-  return nodes.map((node) => {
-    const children = node.children ? addOperationCounts(node.children) : undefined;
-    const ownCount = node.metadata?.kind === "operation" ? 1 : 0;
-    const childCount = children?.reduce((sum, child) => sum + (child.metadata?.operationCount ?? 0), 0) ?? 0;
-
-    return {
-      ...node,
-      children,
-      metadata: {
-        ...node.metadata,
-        operationCount: ownCount + childCount,
-      },
-    };
-  });
+  const copies = new Map<DocTreeNode, DocTreeNode>();
+  const flat = flattenTree(nodes);
+  for (let i = flat.length - 1; i >= 0; i--) {
+    const node = flat[i]!.node;
+    const children = node.children?.map((child) => copies.get(child)!).filter(Boolean);
+    const operationCount = (node.metadata?.kind === "operation" ? 1 : 0) + (children?.reduce((sum, child) => sum + (child.metadata?.operationCount ?? 0), 0) ?? 0);
+    copies.set(node, { ...node, children, metadata: { ...node.metadata, operationCount } });
+  }
+  return nodes.map((node) => copies.get(node)!);
 }
 
 export function buildDocTree(
@@ -957,6 +900,7 @@ export function buildDocTree(
       definitions,
       operations,
       resolvedOptions,
+      warnings,
     );
   } else {
     navigationChildren = buildFlatTagDocTree(
