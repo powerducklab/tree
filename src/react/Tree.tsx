@@ -543,7 +543,7 @@ function NodeRendererInner<TMetadata>(props: NodeRendererProps<TMetadata>) {
     <div
       ref={(element) => onNodeRef(node.id, element)}
       className={rowClassName}
-      style={{ paddingLeft: `${depth * 14 + 8}px` }}
+      style={{ paddingLeft: `${depth * 12 + 8}px` }}
       role="treeitem"
       aria-expanded={isBranch ? isExpanded : undefined}
       aria-selected={isSelected}
@@ -563,7 +563,7 @@ function NodeRendererInner<TMetadata>(props: NodeRendererProps<TMetadata>) {
           <span
             key={`guide-${i}`}
             className={styles.indentGuide}
-            style={{ left: `${(i + 1) * 14 + 33}px` }}
+            style={{ left: `${(i + 1) * 12 + 29}px` }}
           />
         ))}
       {draggable && canDragNode && (
