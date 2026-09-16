@@ -551,6 +551,14 @@ npm run test       # Run tests with vitest
 npm run typecheck  # Type check with tsc
 ```
 
+## Links
+
+- [Official Website](https://www.powerduck.com/opensource/tree.html)
+- [Documentation](https://www.powerduck.com/docs/tree/introduction/)
+- [Live Demo](https://www.powerduck.com/demo/tree)
+- [GitHub](https://github.com/powerducklab/tree)
+- [npm](https://www.npmjs.com/package/@powerduck/tree)
+
 ## License
 
 MIT
