@@ -802,8 +802,8 @@
   height: var(--tree-row-height) !important; min-height: var(--tree-row-height); margin: 0; padding-block: 0;
 }
 .pde-tree-root .pde-tree-searchRow { background: transparent; padding: 8px; gap: 6px; }
-.pde-tree-root .pde-tree-searchInput { height: var(--control-height-md, 32px); border-radius: var(--radius-md, 6px); }
-.pde-tree-root .pde-tree-iconButton { width: var(--control-height-md, 32px); height: var(--control-height-md, 32px); border-radius: var(--radius-md, 6px); }
+.pde-tree-root .pde-tree-searchInput { height: var(--control-height-sm, 28px); border-radius: var(--radius-md, 6px); }
+.pde-tree-root .pde-tree-iconButton { width: var(--control-height-sm, 28px); height: var(--control-height-sm, 28px); border-radius: var(--radius-md, 6px); }
 .pde-tree-iconButton:hover:not(:disabled), .pde-tree-moreButton:hover { background: var(--tree-color-surface-hover); color: var(--tree-color-text-primary); }
 .pde-tree-root :is(button, input, [role="treeitem"]):focus-visible {
   outline: 2px solid var(--tree-color-accent); outline-offset: -2px;
