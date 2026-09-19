@@ -166,6 +166,21 @@ describe("drag constraints", () => {
   });
 });
 
+it("delegates context menu rendering to the onContextMenuOpen host hook", () => {
+  const onContextMenuOpen = vi.fn();
+  render(<Tree nodes={nodes} onContextMenuOpen={onContextMenuOpen} />);
+
+  const row = screen.getByRole("treeitem", { name: "Zulu" });
+  fireEvent.contextMenu(row, { clientX: 123, clientY: 234 });
+  expect(onContextMenuOpen).toHaveBeenCalledOnce();
+  expect(onContextMenuOpen.mock.calls[0][0]).toMatchObject({ x: 123, y: 234 });
+  expect(onContextMenuOpen.mock.calls[0][0].node.id).toBe("zulu");
+  expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "More actions for Zulu" }));
+  expect(onContextMenuOpen).toHaveBeenCalledTimes(2);
+});
+
 it("positions menus inside the usable viewport, excluding the browser scrollbar", () => {
   vi.spyOn(document.documentElement, "clientWidth", "get").mockReturnValue(375);
   vi.spyOn(document.documentElement, "clientHeight", "get").mockReturnValue(844);

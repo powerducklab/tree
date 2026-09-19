@@ -171,6 +171,19 @@ export interface TreeProps<TMetadata = unknown> {
   contextMenuItems?: (node: TreeNode<TMetadata>) => ContextMenuItem<TMetadata>[];
 
   /**
+   * Host-rendered context menu hook. When provided without `contextMenuItems`,
+   * the tree skips its built-in menu and reports each right-click / more-button
+   * request together with viewport coordinates. The host then renders its own
+   * menu system (for example a design-system menu with cascading submenus) and
+   * fully owns open state and dismissal.
+   */
+  onContextMenuOpen?: (request: {
+    node: TreeNode<TMetadata>;
+    x: number;
+    y: number;
+  }) => void;
+
+  /**
    * Called when a mutation (reorder, move, delete via context menu) produces JSON Patch operations.
    * Only fires when the affected node has a `jsonPath` in its metadata.
    * Use with @powerduck/conf-patch `patchContent` to apply to the original document.

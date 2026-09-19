@@ -581,6 +581,7 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
     canDrag,
     canDrop,
     contextMenuItems,
+    onContextMenuOpen,
     onPatch,
     theme,
     virtualized = "auto",
@@ -956,20 +957,21 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
 
   const openContextMenu = useCallback(
     (node: TreeNode<TMetadata>, x: number, y: number) => {
-      if (!contextMenuItems) {
+      if (contextMenuItems) {
+        const items = contextMenuItems(node);
+
+        if (items.length === 0) {
+          return;
+        }
+
+        const anchor = expansion.nodeElementRefs.current.get(node.id);
+        if (anchor) setContextMenu({ x, y, node, items, anchor });
         return;
       }
 
-      const items = contextMenuItems(node);
-
-      if (items.length === 0) {
-        return;
-      }
-
-      const anchor = expansion.nodeElementRefs.current.get(node.id);
-      if (anchor) setContextMenu({ x, y, node, items, anchor });
+      onContextMenuOpen?.({ node, x, y });
     },
-    [contextMenuItems, expansion.nodeElementRefs],
+    [contextMenuItems, onContextMenuOpen, expansion.nodeElementRefs],
   );
 
   const closeContextMenu = useCallback(() => {
@@ -1184,7 +1186,7 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               onDragEnd={handleDragEnd}
-              showContextMenuButton={Boolean(contextMenuItems)}
+              showContextMenuButton={Boolean(contextMenuItems || onContextMenuOpen)}
               activeMenuNodeId={contextMenu?.node.id ?? null}
               onContextMenu={handleNodeContextMenu}
               onMoreClick={handleMoreButtonClick}
