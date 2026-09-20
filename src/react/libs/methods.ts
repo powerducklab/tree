@@ -9,11 +9,11 @@ export const METHOD_LABEL_MAP: Record<string, string> = {
   post: "POST",
   put: "PUT",
   delete: "DEL",
-  patch: "PATCH",
+  patch: "PAT",
   head: "HEAD",
   options: "OPT",
-  trace: "TRA",
-  connect: "CONN",
+  trace: "TRC",
+  connect: "CON",
 };
 
 /**

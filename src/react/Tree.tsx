@@ -31,6 +31,7 @@ const styles = {
   branchControl: "pde-tree-branchControl",
   deprecatedLabel: "pde-tree-deprecatedLabel",
   dragHandle: "pde-tree-dragHandle",
+  dragHandleSpacer: "pde-tree-dragHandleSpacer",
   dropIndicatorAfter: "pde-tree-dropIndicatorAfter",
   dropIndicatorBefore: "pde-tree-dropIndicatorBefore",
   dropIndicatorChild: "pde-tree-dropIndicatorChild",
@@ -488,7 +489,7 @@ function NodeRendererInner<TMetadata>(props: NodeRendererProps<TMetadata>) {
             style={{ left: `${(i + 1) * 12 + 29}px` }}
           />
         ))}
-      {draggable && canDragNode && (
+      {draggable && canDragNode ? (
         <span
           className={styles.dragHandle}
           draggable
@@ -499,7 +500,9 @@ function NodeRendererInner<TMetadata>(props: NodeRendererProps<TMetadata>) {
         >
           <DragHandleIcon />
         </span>
-      )}
+      ) : draggable ? (
+        <span className={styles.dragHandleSpacer} aria-hidden="true" />
+      ) : null}
       {isBranch ? (
         <ChevronIcon expanded={isExpanded} />
       ) : (

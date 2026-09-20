@@ -8,18 +8,19 @@ describe("METHOD_LABEL_MAP", () => {
     expect(METHOD_LABEL_MAP.post).toBe("POST");
     expect(METHOD_LABEL_MAP.put).toBe("PUT");
     expect(METHOD_LABEL_MAP.delete).toBe("DEL");
-    expect(METHOD_LABEL_MAP.patch).toBe("PATCH");
+    expect(METHOD_LABEL_MAP.patch).toBe("PAT");
     expect(METHOD_LABEL_MAP.head).toBe("HEAD");
     expect(METHOD_LABEL_MAP.options).toBe("OPT");
-    expect(METHOD_LABEL_MAP.trace).toBe("TRA");
-    expect(METHOD_LABEL_MAP.connect).toBe("CONN");
+    expect(METHOD_LABEL_MAP.trace).toBe("TRC");
+    expect(METHOD_LABEL_MAP.connect).toBe("CON");
   });
 
   it("abbreviates long methods to fit compact badge", () => {
     expect(METHOD_LABEL_MAP.delete).toBe("DEL");
+    expect(METHOD_LABEL_MAP.patch).toBe("PAT");
     expect(METHOD_LABEL_MAP.options).toBe("OPT");
-    expect(METHOD_LABEL_MAP.trace).toBe("TRA");
-    expect(METHOD_LABEL_MAP.connect).toBe("CONN");
+    expect(METHOD_LABEL_MAP.trace).toBe("TRC");
+    expect(METHOD_LABEL_MAP.connect).toBe("CON");
   });
 
   it("keeps short methods unchanged", () => {
@@ -45,7 +46,7 @@ describe("getMethodLabel", () => {
 
   it("handles whitespace and case variations", () => {
     expect(getMethodLabel("  post  ")).toBe("POST");
-    expect(getMethodLabel("PaTcH")).toBe("PATCH");
+    expect(getMethodLabel("PaTcH")).toBe("PAT");
   });
 
   it("handles empty string gracefully", () => {

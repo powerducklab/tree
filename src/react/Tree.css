@@ -282,6 +282,14 @@
   opacity: 1;
 }
 
+/* Non-draggable rows inside a draggable tree reserve the same 14px column so
+   every row's icon and label stay vertically aligned. */
+.pde-tree-dragHandleSpacer {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
 /* -------------------------------------------------------------------------- */
 /* Node icon                                                                  */
 /* -------------------------------------------------------------------------- */
