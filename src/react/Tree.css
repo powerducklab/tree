@@ -80,8 +80,8 @@
 }
 
 .pde-tree-searchInput:focus {
-  border-color: var(--tree-color-accent, #f28c28);
-  box-shadow: 0 0 0 2px var(--tree-color-focus-ring, rgba(242, 140, 40, 0.28));
+  border-color: var(--tree-color-border-strong, #ccd2d8);
+  box-shadow: 0 0 0 2px var(--tree-color-focus-ring, rgba(122, 131, 143, 0.30));
   background: var(--tree-color-surface, #ffffff);
 }
 
@@ -814,7 +814,7 @@
 .pde-tree-root .pde-tree-iconButton { width: var(--control-height-sm, 28px); height: var(--control-height-sm, 28px); border-radius: var(--radius-md, 6px); }
 .pde-tree-iconButton:hover:not(:disabled), .pde-tree-moreButton:hover { background: var(--tree-color-surface-hover); color: var(--tree-color-text-primary); }
 .pde-tree-root :is(button, input, [role="treeitem"]):focus-visible {
-  outline: 2px solid var(--tree-color-accent); outline-offset: -2px;
+  outline: 2px solid var(--tree-color-border-strong, #ccd2d8); outline-offset: -2px;
 }
 .pde-tree-nodeRow:focus-within .pde-tree-moreButton, .pde-tree-moreButton:focus-visible { opacity: 1; }
 .pde-tree-root .pde-tree-moreButton { width: 24px; height: 24px; border-radius: var(--radius-sm, 4px); }
@@ -822,7 +822,7 @@
 .pde-tree-contextMenu { font-family: var(--font-family-ui, Inter, ui-sans-serif, system-ui, sans-serif); border-radius: var(--radius-lg, 8px); }
 .pde-tree-contextMenuItem { height: auto; min-height: 32px; white-space: normal; padding: 6px 9px; line-height: 20px; }
 .pde-tree-contextMenuItem > span:last-child { min-width: 0; overflow-wrap: anywhere; }
-.pde-tree-contextMenuItem:focus-visible { outline: 2px solid var(--tree-color-accent); outline-offset: -2px; background: var(--tree-color-surface-hover); }
+.pde-tree-contextMenuItem:focus-visible { outline: 2px solid var(--tree-color-border-strong, #ccd2d8); outline-offset: -2px; background: var(--tree-color-surface-hover); }
 .pde-tree-treeContainer, .pde-tree-contextMenu { scrollbar-width: thin; scrollbar-color: transparent transparent; }
 .pde-tree-treeContainer::-webkit-scrollbar, .pde-tree-contextMenu::-webkit-scrollbar { width: 6px; height: 6px; }
 .pde-tree-treeContainer::-webkit-scrollbar-thumb, .pde-tree-contextMenu::-webkit-scrollbar-thumb { background: transparent; border-radius: 9999px; }

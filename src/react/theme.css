@@ -10,7 +10,7 @@
   --tree-color-danger: var(--color-danger, #FF0000);
   --tree-color-danger-soft: var(--color-danger-soft, #fff2f1);
   --tree-color-dynamic: var(--color-dynamic, #4d7ec8);
-  --tree-color-focus-ring: var(--color-focus-ring, rgba(242, 140, 40, 0.28));
+  --tree-color-focus-ring: var(--color-focus-ring, rgba(122, 131, 143, 0.30));
   --tree-color-info: var(--color-info, #4f79bf);
   --tree-color-info-soft: var(--color-info-soft, #f0f5ff);
   --tree-color-success: var(--color-success, #428961);
@@ -42,7 +42,7 @@
   --tree-color-danger: var(--color-danger, #ef7c7c);
   --tree-color-danger-soft: var(--color-danger-soft, #402020);
   --tree-color-dynamic: var(--color-dynamic, #7eb0f3);
-  --tree-color-focus-ring: var(--color-focus-ring, rgba(244, 160, 74, 0.36));
+  --tree-color-focus-ring: var(--color-focus-ring, rgba(150, 158, 170, 0.38));
   --tree-color-info: var(--color-info, #82aef2);
   --tree-color-info-soft: var(--color-info-soft, #1d304f);
   --tree-color-success: var(--color-success, #67bd89);
