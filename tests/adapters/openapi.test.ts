@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { buildOpenApiTree } from "../../src/adapters/openapi";
-import { findNode } from "../../src/core/tree-utils";
+import { findNode, moveNode, reorderNode } from "../../src/core/tree-utils";
 
 /* Helper: get children inside the top-level "APIs" section. */
 function apisChildren(result: ReturnType<typeof buildOpenApiTree>) {
@@ -106,7 +106,7 @@ describe("buildOpenApiTree - basic", () => {
 /* -------------------------------------------------------------------------- */
 
 describe("buildOpenApiTree - untagged", () => {
-  it("places untagged operations in Other group", () => {
+  it("places untagged operations directly at the APIs root (no virtual Other)", () => {
     const result = buildOpenApiTree({
       openapi: "3.1.0",
       info: { title: "Test", version: "1.0.0" },
@@ -117,9 +117,107 @@ describe("buildOpenApiTree - untagged", () => {
       },
     });
 
-    const other = apisChildren(result).find((n) => n.name === "Other");
+    const children = apisChildren(result);
+    expect(children.find((n) => n.id === "tag:Other")).toBeUndefined();
+    expect(children.find((n) => n.name === "Other")).toBeUndefined();
+
+    const rootOp = children.find((n) => n.id === "op:root:healthCheck");
+    expect(rootOp).toBeDefined();
+    expect(rootOp?.metadata.kind).toBe("operation");
+    expect(rootOp?.metadata.method).toBe("get");
+    expect(rootOp?.metadata.path).toBe("/health");
+    expect(rootOp?.children).toBeUndefined();
+  });
+
+  it("keeps an explicitly defined Other tag as a real folder", () => {
+    const result = buildOpenApiTree({
+      openapi: "3.1.0",
+      info: { title: "Test", version: "1.0.0" },
+      tags: [{ name: "Other", description: "Miscellaneous" }],
+      paths: {
+        "/misc": { get: { tags: ["Other"], summary: "Misc" } },
+        "/health": { get: { summary: "Health" } },
+      },
+    });
+
+    const children = apisChildren(result);
+    const other = children.find((n) => n.id === "tag:Other");
     expect(other).toBeDefined();
     expect(other?.children?.length).toBe(1);
+    expect(other?.children?.[0]?.metadata.path).toBe("/misc");
+
+    const rootOp = children.find((n) => n.id === "op:root:get:/health");
+    expect(rootOp).toBeDefined();
+  });
+
+  it("mixes tag folders and root-level untagged operations", () => {
+    const result = buildOpenApiTree({
+      openapi: "3.1.0",
+      info: { title: "Test", version: "1.0.0" },
+      tags: [{ name: "Users" }],
+      paths: {
+        "/users": { get: { tags: ["Users"], summary: "List users" } },
+        "/ping": { get: { summary: "Ping" } },
+      },
+    });
+
+    const children = apisChildren(result);
+    expect(children.find((n) => n.id === "tag:Users")).toBeDefined();
+    expect(children.find((n) => n.id === "op:root:get:/ping")).toBeDefined();
+    expect(children.find((n) => n.name === "Other")).toBeUndefined();
+  });
+});
+
+/* -------------------------------------------------------------------------- */
+/* Root-level operations are drag targets for the core tree primitives        */
+/* -------------------------------------------------------------------------- */
+
+describe("buildOpenApiTree - root operations with drag primitives", () => {
+  const doc = {
+    openapi: "3.1.0",
+    info: { title: "Test", version: "1.0.0" },
+    tags: [{ name: "Users" }],
+    paths: {
+      "/users": { get: { tags: ["Users"], summary: "List users" } },
+      "/ping": { get: { summary: "Ping" } },
+      "/health": { get: { summary: "Health" } },
+    },
+  };
+
+  it("moves a root-level operation into a tag folder via moveNode", () => {
+    const result = buildOpenApiTree(doc);
+    const apis = result.root.children?.find((n) => n.id === "section:apis");
+    const nodes = apis?.children ?? [];
+
+    // `nodes` are the APIs-section children, which is the array the app feeds
+    // to the Tree component for navigation drag and drop.
+    const moved = moveNode(nodes, "op:root:get:/ping", "tag:Users");
+    expect(moved).not.toBeNull();
+
+    const users = findNode(moved!, "tag:Users");
+    expect(users?.children?.some((n) => n.id === "op:root:get:/ping")).toBe(true);
+    // Removed from the section root.
+    expect(moved!.some((n) => n.id === "op:root:get:/ping")).toBe(false);
+  });
+
+  it("reorders root-level operations with reorderNode", () => {
+    const result = buildOpenApiTree(doc);
+    const apis = result.root.children?.find((n) => n.id === "section:apis");
+    const nodes = apis?.children ?? [];
+    const before = nodes.map((n) => n.id);
+    // Sorted by name when no x-order is set: Health before Ping.
+    expect(before.indexOf("op:root:get:/health")).toBeLessThan(
+      before.indexOf("op:root:get:/ping"),
+    );
+
+    const healthIndex = before.indexOf("op:root:get:/health");
+    const reordered = reorderNode(nodes, "op:root:get:/ping", healthIndex);
+    expect(reordered).not.toBeNull();
+    const after = reordered!.nodes.map((n) => n.id);
+    // Ping now precedes Health.
+    expect(after.indexOf("op:root:get:/ping")).toBeLessThan(
+      after.indexOf("op:root:get:/health"),
+    );
   });
 });
 

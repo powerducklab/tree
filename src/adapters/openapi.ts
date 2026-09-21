@@ -270,6 +270,28 @@ function hasOas32NestedTags(definitions: TagDefinition[]): boolean {
  * parent by name. This function resolves the hierarchy, detects circular
  * references, and attaches operations to their tags.
  */
+/* Operations without a tag render directly under the APIs root instead of
+   being collected into a synthetic "Other" folder. */
+function buildRootOperationNode(
+  operation: ParsedOperation,
+): OpenApiTreeNode {
+  return {
+    id: `op:root:${operation.id}`,
+    name: operation.name,
+    order: getOrder(operation.raw),
+    metadata: {
+      method: operation.method,
+      path: operation.path,
+      operationId: operation.operationId,
+      deprecated: operation.deprecated,
+      summary: operation.summary,
+      pointer: operation.pointer,
+      source: "fallback",
+      kind: "operation",
+    },
+  };
+}
+
 function buildOas32NestedTree(
   definitions: TagDefinition[],
   operations: ParsedOperation[],
@@ -277,15 +299,19 @@ function buildOas32NestedTree(
   warnings: string[],
 ): OpenApiTreeNode[] {
   const operationsByTag = new Map<string, ParsedOperation[]>();
+  const untagged: ParsedOperation[] = [];
 
   for (const operation of operations) {
     if (isHidden(operation.raw, options.showInternal)) {
       continue;
     }
 
-    const tags = operation.tags.length > 0 ? operation.tags : ["Other"];
+    if (operation.tags.length === 0) {
+      untagged.push(operation);
+      continue;
+    }
 
-    for (const tag of tags) {
+    for (const tag of operation.tags) {
       const existing = operationsByTag.get(tag) ?? [];
       existing.push(operation);
       operationsByTag.set(tag, existing);
@@ -328,45 +354,12 @@ function buildOas32NestedTree(
   const definedNames = new Set(definitions.map((tag) => tag.name));
   const allDefinitions = [...definitions];
   for (const name of operationsByTag.keys()) {
-    if (name !== "Other" && !definedNames.has(name)) allDefinitions.push({ name, displayName: name, raw: {} });
+    if (!definedNames.has(name)) allDefinitions.push({ name, displayName: name, raw: {} });
   }
   const rootTags = buildTagHierarchy(allDefinitions, buildTagNode, warnings);
 
-  /* Add untagged operations to "Other" group. */
-  const otherOperations = operationsByTag.get("Other") ?? [];
-
-  if (otherOperations.length > 0 && !definitions.some((tag) => tag.name === "Other")) {
-    const otherChildren: OpenApiTreeNode[] = otherOperations.map(
-      (operation) => ({
-        id: `op:Other:${operation.id}`,
-        name: operation.name,
-        order: getOrder(operation.raw),
-        metadata: {
-          method: operation.method,
-          path: operation.path,
-          operationId: operation.operationId,
-          deprecated: operation.deprecated,
-          summary: operation.summary,
-          pointer: operation.pointer,
-          source: "fallback",
-          kind: "operation",
-        },
-      }),
-    );
-
-    rootTags.push({
-      id: "tag:Other",
-      name: "Other",
-      order: Number.MAX_SAFE_INTEGER,
-      children: sortNodes(otherChildren),
-      metadata: {
-        source: "fallback",
-        kind: "tag",
-      },
-    });
-  }
-
-  return sortNodes(rootTags);
+  /* Attach untagged operations directly at the APIs root; no synthetic folder. */
+  return sortNodes([...rootTags, ...untagged.map(buildRootOperationNode)]);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -435,9 +428,15 @@ function buildTagGroupsTree(
   }
 
   const operationsByTag = new Map<string, ParsedOperation[]>();
+  const untagged: ParsedOperation[] = [];
 
   for (const operation of operations) {
     if (isHidden(operation.raw, options.showInternal)) {
+      continue;
+    }
+
+    if (operation.tags.length === 0) {
+      untagged.push(operation);
       continue;
     }
 
@@ -507,7 +506,10 @@ function buildTagGroupsTree(
     };
   };
 
-  return sortNodes(groups.map(buildGroupNode));
+  return sortNodes([
+    ...groups.map(buildGroupNode),
+    ...untagged.map(buildRootOperationNode),
+  ]);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -520,6 +522,7 @@ function buildFlatTagTree(
   options: Required<OpenApiTreeOptions>,
 ): OpenApiTreeNode[] {
   const operationsByTag = new Map<string, ParsedOperation[]>();
+  const untagged: ParsedOperation[] = [];
   /* Use x-order when set, fall back to definition index for stable ordering. */
   const tagOrder = new Map<string, number>();
 
@@ -533,9 +536,12 @@ function buildFlatTagTree(
       continue;
     }
 
-    const tags = operation.tags.length > 0 ? operation.tags : ["Other"];
+    if (operation.tags.length === 0) {
+      untagged.push(operation);
+      continue;
+    }
 
-    for (const tag of tags) {
+    for (const tag of operation.tags) {
       const existing = operationsByTag.get(tag) ?? [];
       existing.push(operation);
       operationsByTag.set(tag, existing);
@@ -570,7 +576,7 @@ function buildFlatTagTree(
     nodes.push({
       id: `tag:${tag}`,
       name: displayNames.get(tag) ?? tag,
-      order: tag === "Other" ? Number.MAX_SAFE_INTEGER : tagOrder.get(tag),
+      order: tagOrder.get(tag),
       children: sortNodes(children),
       metadata: {
         source: "tag",
@@ -579,7 +585,7 @@ function buildFlatTagTree(
     });
   }
 
-  return sortNodes(nodes);
+  return sortNodes([...nodes, ...untagged.map(buildRootOperationNode)]);
 }
 
 /* -------------------------------------------------------------------------- */
