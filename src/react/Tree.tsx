@@ -421,7 +421,8 @@ function NodeRendererInner<TMetadata>(props: NodeRendererProps<TMetadata>) {
       ) : (
         /* Primitive leaves (string, number, boolean, null, property, tag, etc.)
            use a unified CSS dot for consistent size and centering. */
-        <span className={styles.primitiveDot} />
+        // <span className={styles.primitiveDot} />
+        method && <MethodBadge method={method} />
       )}
     </span>
   );
@@ -507,7 +508,7 @@ function NodeRendererInner<TMetadata>(props: NodeRendererProps<TMetadata>) {
         <span className={styles.expandIconPlaceholder} />
       )}
       {defaultIcon}
-      {method && <MethodBadge method={method} />}
+      {/* {method && <MethodBadge method={method} />} */}
       {defaultLabel}
       {required && <span className={styles.requiredDot} title="Required" />}
       <span className={styles.nodeSuffix}>{defaultSuffix}</span>

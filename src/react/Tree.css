@@ -493,7 +493,7 @@
 /* -------------------------------------------------------------------------- */
 
 .pde-tree-moreButton {
-  display: inline-flex;
+  display: none;
   align-items: center;
   justify-content: center;
   width: 20px;
@@ -511,6 +511,7 @@
 }
 
 .pde-tree-nodeRow:hover .pde-tree-moreButton {
+  display: inline-flex;
   opacity: 1;
 }
 
