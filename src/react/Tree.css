@@ -247,15 +247,19 @@
 /* -------------------------------------------------------------------------- */
 
 .pde-tree-dragHandle {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 14px;
   height: 14px;
-  flex-shrink: 0;
   color: var(--tree-color-text-tertiary, #989da5);
   cursor: grab;
   opacity: 0;
+  pointer-events: none;
   transition: opacity var(--transition-fast, 140ms ease),
     color var(--transition-fast, 140ms ease);
 }
@@ -276,18 +280,11 @@
 
 .pde-tree-nodeRow:hover .pde-tree-dragHandle {
   opacity: 0.6;
+  pointer-events: auto;
 }
 
 .pde-tree-nodeRow:hover .pde-tree-dragHandle:hover {
   opacity: 1;
-}
-
-/* Non-draggable rows inside a draggable tree reserve the same 14px column so
-   every row's icon and label stay vertically aligned. */
-.pde-tree-dragHandleSpacer {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -830,7 +827,7 @@
 .pde-tree-treeContainer:hover::-webkit-scrollbar-thumb, .pde-tree-treeContainer:focus-within::-webkit-scrollbar-thumb,
 .pde-tree-contextMenu:hover::-webkit-scrollbar-thumb, .pde-tree-contextMenu:focus-within::-webkit-scrollbar-thumb { background: var(--tree-color-border-strong); }
 @media (hover: none) {
-  .pde-tree-moreButton, .pde-tree-dragHandle { opacity: 1; }
+  .pde-tree-moreButton, .pde-tree-dragHandle { opacity: 1; pointer-events: auto; }
   .pde-tree-treeContainer, .pde-tree-contextMenu { scrollbar-color: var(--tree-color-border-strong) transparent; }
 }
 @media (prefers-reduced-motion: reduce) {

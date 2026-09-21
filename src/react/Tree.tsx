@@ -31,7 +31,6 @@ const styles = {
   branchControl: "pde-tree-branchControl",
   deprecatedLabel: "pde-tree-deprecatedLabel",
   dragHandle: "pde-tree-dragHandle",
-  dragHandleSpacer: "pde-tree-dragHandleSpacer",
   dropIndicatorAfter: "pde-tree-dropIndicatorAfter",
   dropIndicatorBefore: "pde-tree-dropIndicatorBefore",
   dropIndicatorChild: "pde-tree-dropIndicatorChild",
@@ -486,12 +485,13 @@ function NodeRendererInner<TMetadata>(props: NodeRendererProps<TMetadata>) {
           <span
             key={`guide-${i}`}
             className={styles.indentGuide}
-            style={{ left: `${(i + 1) * 12 + 29}px` }}
+            style={{ left: `${(i + 1) * 12 + 11}px` }}
           />
         ))}
       {draggable && canDragNode ? (
         <span
           className={styles.dragHandle}
+          style={{ left: `${Math.min(depth, 20) * 12 + 4}px` }}
           draggable
           onDragStart={(event) => onDragStart(node, event)}
           onDragEnd={onDragEnd}
@@ -500,8 +500,6 @@ function NodeRendererInner<TMetadata>(props: NodeRendererProps<TMetadata>) {
         >
           <DragHandleIcon />
         </span>
-      ) : draggable ? (
-        <span className={styles.dragHandleSpacer} aria-hidden="true" />
       ) : null}
       {isBranch ? (
         <ChevronIcon expanded={isExpanded} />
