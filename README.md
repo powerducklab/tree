@@ -441,6 +441,7 @@ Builds a Stripe-style documentation tree where each operation expands to show pa
 | `className` | `string` | — | Additional CSS class |
 | `style` | `CSSProperties` | — | Inline styles |
 | `size` | `"xs" \| "sm" \| "md"` | `"sm"` | Size variant |
+| `virtualized` | `boolean \| "auto"` | `"auto"` | Window large lists (`auto` enables it past 500 visible rows; ignored for doc variant and custom `renderNode`) |
 | `showIndentGuides` | `boolean` | `true` | Show indent guide lines |
 | `maxHeight` | `number \| string` | — | Max height before scrolling |
 | `draggable` | `boolean` | `false` | Enable drag and drop reordering |
@@ -462,6 +463,7 @@ interface TreeHandle {
   getExpandedIds: () => string[];
   getSelectedNode: () => TreeNode | undefined;
   scrollToNode: (id: string) => void;
+  locateNode: (predicate: (node: TreeNode) => boolean) => TreeNode | undefined;
 }
 ```
 
@@ -555,7 +557,7 @@ npm run typecheck  # Type check with tsc
 
 - [Official Website](https://www.powerduck.com/opensource/tree.html)
 - [Documentation](https://www.powerduck.com/docs/tree/introduction/)
-- [Live Demo](https://www.powerduck.com/demo/tree)
+- [Live Demo](https://www.powerduck.com/demo/)
 - [GitHub](https://github.com/powerducklab/tree)
 - [npm](https://www.npmjs.com/package/@powerduck/tree)
 
