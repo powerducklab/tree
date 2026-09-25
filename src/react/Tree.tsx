@@ -791,29 +791,44 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
 
       event.dataTransfer.dropEffect = "none";
 
+      const source = nodeIndex.byId.get(dragState.draggedId)?.node;
+      if (!source) {
+        setDragState((prev) => prev.dragOverId === null ? prev : { ...prev, dragOverId: null, dragOverPosition: null });
+        return;
+      }
 
       const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
       const relativeY = (event.clientY - rect.top) / rect.height;
       const hasChildren = (node.children?.length ?? 0) > 0;
 
-      /* Three-zone detection for branch nodes: before (top 25%), child (middle 50%), after (bottom 25%).
-         Leaf nodes only support before/after. */
-      let position: "before" | "after" | "child";
+      /* Geometric before/after preference by pointer band. A container ("child")
+         zone is offered when the node already holds children, or when the host
+         explicitly allows dropping into it, so an empty folder can receive its
+         first item while generic leaves never become containers. The host's
+         canDrop is the source of truth for whether a target can hold children. */
+      const lean: "before" | "after" = relativeY < 0.5 ? "before" : "after";
 
-      if (hasChildren) {
-        if (relativeY < 0.25) {
-          position = "before";
-        } else if (relativeY > 0.75) {
-          position = "after";
-        } else {
-          position = "child";
-        }
+      let candidates: Array<"before" | "after" | "child">;
+      let childSlot: number;
+      if (relativeY < 0.25) {
+        candidates = ["before", "after"];
+        childSlot = 1;
+      } else if (relativeY > 0.75) {
+        candidates = ["after", "before"];
+        childSlot = 1;
       } else {
-        position = relativeY < 0.5 ? "before" : "after";
+        candidates = [lean];
+        childSlot = 0;
       }
 
-      const source = nodeIndex.byId.get(dragState.draggedId)?.node;
-      if (!source || !isAllowedDrop(source, node, position)) {
+      const hostAllowsChild = canDrop ? isAllowedDrop(source, node, "child") : false;
+      if (hasChildren || hostAllowsChild) {
+        candidates.splice(childSlot, 0, "child");
+      }
+
+      const position = candidates.find((candidate) => isAllowedDrop(source, node, candidate));
+
+      if (!position) {
         setDragState((prev) => prev.dragOverId === null ? prev : { ...prev, dragOverId: null, dragOverPosition: null });
         return;
       }
@@ -832,7 +847,7 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
         };
       });
     },
-    [isAllowedDrop, dragState.draggedId, nodeIndex],
+    [isAllowedDrop, canDrop, dragState.draggedId, nodeIndex],
   );
 
   const handleDragLeave = useCallback(

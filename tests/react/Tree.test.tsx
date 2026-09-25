@@ -164,6 +164,31 @@ describe("drag constraints", () => {
     expect(onMove).not.toHaveBeenCalled();
     expect(onReorder).not.toHaveBeenCalled();
   });
+
+  it("drops an operation into an empty folder when canDrop allows a child", () => {
+    const onMove = vi.fn();
+    const canDrop = (
+      source: TreeNode,
+      target: TreeNode,
+      position: "before" | "after" | "child",
+    ) =>
+      source.metadata?.kind === "operation" &&
+      target.metadata?.kind === "tag" &&
+      position === "child";
+    const tree: TreeNode[] = [
+      { id: "tag:empty", name: "Empty", metadata: { kind: "tag" } },
+      { id: "op:1", name: "Do thing", metadata: { kind: "operation", method: "get" } },
+    ];
+    render(<Tree nodes={tree} draggable canDrop={canDrop} onMove={onMove} />);
+    const source = screen.getByRole("treeitem", { name: /Do thing/ });
+    const folder = screen.getByRole("treeitem", { name: "Empty" });
+
+    // Middle, top and bottom bands all resolve to "child" for an empty folder
+    // whose only valid drop position is "child".
+    drag(source, folder, 0.5);
+    expect(onMove).toHaveBeenCalledOnce();
+    expect(onMove.mock.calls[0]?.[2]).toBe("tag:empty");
+  });
 });
 
 it("delegates context menu rendering to the onContextMenuOpen host hook", () => {
