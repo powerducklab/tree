@@ -554,9 +554,9 @@ function buildFlatTagTree(
     displayNames.set(tag.name, tag.displayName);
   }
 
-  const nodes: OpenApiTreeNode[] = [];
-
-  for (const [tag, tagOperations] of operationsByTag) {
+  // Build a folder node for one tag, including folders with no operations.
+  const buildTagNode = (tag: string, fallbackOrder?: number): OpenApiTreeNode => {
+    const tagOperations = operationsByTag.get(tag) ?? [];
     const children: OpenApiTreeNode[] = tagOperations.map((operation) => ({
       id: `op:${tag}:${operation.id}`,
       name: operation.name,
@@ -573,16 +573,33 @@ function buildFlatTagTree(
       },
     }));
 
-    nodes.push({
+    return {
       id: `tag:${tag}`,
       name: displayNames.get(tag) ?? tag,
-      order: tagOrder.get(tag),
+      order: tagOrder.get(tag) ?? fallbackOrder,
       children: sortNodes(children),
       metadata: {
         source: "tag",
         kind: "tag",
       },
-    });
+    };
+  };
+
+  // Render every declared tag so empty folders stay visible, then any tag
+  // referenced by operations but missing from the declared list.
+  const nodes: OpenApiTreeNode[] = [];
+  const rendered = new Set<string>();
+
+  definitions.forEach((definition, index) => {
+    rendered.add(definition.name);
+    nodes.push(buildTagNode(definition.name, index));
+  });
+
+  let extraOrder = definitions.length;
+  for (const tag of operationsByTag.keys()) {
+    if (rendered.has(tag)) continue;
+    nodes.push(buildTagNode(tag, extraOrder));
+    extraOrder += 1;
   }
 
   return sortNodes([...nodes, ...untagged.map(buildRootOperationNode)]);

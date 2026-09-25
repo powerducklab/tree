@@ -166,6 +166,27 @@ describe("buildOpenApiTree - untagged", () => {
     expect(children.find((n) => n.id === "op:root:get:/ping")).toBeDefined();
     expect(children.find((n) => n.name === "Other")).toBeUndefined();
   });
+
+  it("renders a declared tag with no operations as an empty folder", () => {
+    const result = buildOpenApiTree({
+      openapi: "3.1.0",
+      info: { title: "Test", version: "1.0.0" },
+      tags: [{ name: "Users" }, { name: "Orders" }],
+      paths: {
+        "/users": { get: { tags: ["Users"], summary: "List users" } },
+        "/health": { get: { summary: "Health" } },
+      },
+    });
+
+    const children = apisChildren(result);
+    const orders = children.find((n) => n.id === "tag:Orders");
+    expect(orders).toBeDefined();
+    expect(orders?.metadata.kind).toBe("tag");
+    expect(orders?.children ?? []).toEqual([]);
+
+    const users = children.find((n) => n.id === "tag:Users");
+    expect(users?.children?.length).toBe(1);
+  });
 });
 
 /* -------------------------------------------------------------------------- */
