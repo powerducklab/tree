@@ -9,6 +9,10 @@ export interface ContextMenuState<T> {
   node: TreeNode<T>;
   items: ContextMenuItem<T>[];
   anchor: HTMLElement;
+  /** Localized accessible name for the menu. Defaults to "Actions for {name}". */
+  ariaLabel?: string;
+  /** Localized fallback for a two-tap confirm item. Defaults to "Confirm?". */
+  confirmLabel?: string;
 }
 
 /** Keep menus outside clipped trees and inside the active modal's top layer. */
@@ -58,7 +62,7 @@ export function ContextMenu<T>({ state, onClose }: {
   }, [state, onClose]);
 
   return createPortal(<div ref={menuRef} className="pde-tree-contextMenu" style={{ ...tokens, ...position }}
-    role="menu" aria-label={`Actions for ${state.node.name}`} tabIndex={-1}
+    role="menu" aria-label={state.ariaLabel ?? `Actions for ${state.node.name}`} tabIndex={-1}
     onKeyDown={(event) => {
       const menu = menuRef.current;
       if (!menu) return;
@@ -89,7 +93,7 @@ export function ContextMenu<T>({ state, onClose }: {
           item.onClick(state.node);
         }}>
         {item.icon && <span className="pde-tree-contextMenuIcon" aria-hidden="true">{item.icon}</span>}
-        <span>{item.confirm && confirming === index ? item.confirmLabel ?? "Confirm?" : item.label}</span>
+        <span>{item.confirm && confirming === index ? item.confirmLabel ?? state.confirmLabel ?? "Confirm?" : item.label}</span>
       </button>
     </div>)}
   </div>, host);

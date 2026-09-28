@@ -37,6 +37,61 @@ export interface ContextMenuItem<TMetadata = unknown> {
 }
 
 /**
+ * User-visible strings rendered by the tree. Host applications pass localized
+ * values; omitted fields use the English defaults so existing consumers keep
+ * working without changes.
+ */
+export interface TreeLabels {
+  /** Search input placeholder. */
+  search: string;
+  /** Accessible label for the search input. */
+  searchTree: string;
+  /** Expand-all button tooltip and accessible label. */
+  expandAll: string;
+  /** Collapse-all button tooltip and accessible label. */
+  collapseAll: string;
+  /** Refresh button tooltip and accessible label. */
+  refresh: string;
+  /** Accessible label for a row drag handle. */
+  dragToReorder: string;
+  /** Tooltip for the required-parameter indicator. */
+  required: string;
+  /** Tooltip for the node more-actions button. */
+  moreActions: string;
+  /** Accessible label for a node more-actions button. Supports {{name}}. */
+  moreActionsFor: string;
+  /** Accessible label for the tree navigation region. */
+  treeNavigation: string;
+  /** Accessible label for a node context menu. Supports {{name}}. */
+  contextMenuFor: string;
+  /** Default label for a menu item in its two-tap confirm state. */
+  confirmAction: string;
+  /** Empty-state message during an active search. */
+  noResults: string;
+  /** Empty-state message when the tree has no nodes. */
+  noItems: string;
+}
+
+/** English default labels; merged under any host-provided partial labels. */
+export const DEFAULT_TREE_LABELS: TreeLabels = {
+  search: "Search...",
+  searchTree: "Search tree",
+  expandAll: "Expand all",
+  collapseAll: "Collapse all",
+  refresh: "Refresh",
+  dragToReorder: "Drag to reorder",
+  required: "Required",
+  moreActions: "More actions",
+  moreActionsFor: "More actions for {{name}}",
+  treeNavigation: "Tree navigation",
+  contextMenuFor: "Actions for {{name}}",
+  confirmAction: "Confirm?",
+  noResults: "No matching results",
+  noItems: "No items",
+};
+
+
+/**
  * Render context passed to custom render functions.
  */
 export interface TreeRenderContext<TMetadata = unknown> {
@@ -78,6 +133,9 @@ export interface TreeProps<TMetadata = unknown> {
 
   /** Placeholder text for the search input. Default "Search...". */
   searchPlaceholder?: string;
+
+  /** Localized, user-visible tree text. Omitted fields fall back to English. */
+  labels?: Partial<TreeLabels>;
 
   /** Show expand/collapse all buttons in the toolbar. Default false. */
   showExpandAll?: boolean;

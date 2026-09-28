@@ -19,9 +19,11 @@ import { useTreeSearch } from "./hooks/useTreeSearch";
 import type {
   JsonPatchOp,
   TreeHandle,
+  TreeLabels,
   TreeProps,
   TreeRenderContext,
 } from "./libs/types";
+import { DEFAULT_TREE_LABELS } from "./libs/types";
 import { indexTree } from "./libs/tree-index";
 import { getMethodLabel } from "./libs/methods";
 import "./Tree.css";
@@ -262,6 +264,8 @@ interface NodeRendererProps<TMetadata> {
   activeMenuNodeId: string | null;
   onContextMenu: (node: TreeNode<TMetadata>, event: React.MouseEvent) => void;
   onMoreClick: (node: TreeNode<TMetadata>, event: React.MouseEvent) => void;
+  /* Localized text */
+  labels: TreeLabels;
 }
 
 /** Only rows whose own state or callbacks change need to render again. */
@@ -314,6 +318,7 @@ function areNodePropsEqual<TMetadata>(
   if (prev.onDragEnd !== next.onDragEnd) return false;
   if (prev.onContextMenu !== next.onContextMenu) return false;
   if (prev.onMoreClick !== next.onMoreClick) return false;
+  if (prev.labels !== next.labels) return false;
 
   return true;
 }
@@ -344,6 +349,7 @@ function NodeRendererInner<TMetadata>(props: NodeRendererProps<TMetadata>) {
     activeMenuNodeId,
     onContextMenu,
     onMoreClick,
+    labels,
   } = props;
 
   const { isExpanded, isSelected } = props;
@@ -496,8 +502,8 @@ function NodeRendererInner<TMetadata>(props: NodeRendererProps<TMetadata>) {
           draggable
           onDragStart={(event) => onDragStart(node, event)}
           onDragEnd={onDragEnd}
-          title="Drag to reorder"
-          aria-label="Drag to reorder"
+          title={labels.dragToReorder}
+          aria-label={labels.dragToReorder}
         >
           <DragHandleIcon />
         </span>
@@ -510,7 +516,7 @@ function NodeRendererInner<TMetadata>(props: NodeRendererProps<TMetadata>) {
       {defaultIcon}
       {/* {method && <MethodBadge method={method} />} */}
       {defaultLabel}
-      {required && <span className={styles.requiredDot} title="Required" />}
+      {required && <span className={styles.requiredDot} title={labels.required} />}
       <span className={styles.nodeSuffix}>{defaultSuffix}</span>
       {showContextMenuButton && (
         <button
@@ -522,8 +528,8 @@ function NodeRendererInner<TMetadata>(props: NodeRendererProps<TMetadata>) {
             .filter(Boolean)
             .join(" ")}
           onClick={(event) => onMoreClick(node, event)}
-          title="More actions"
-          aria-label={`More actions for ${node.name}`}
+          title={labels.moreActions}
+          aria-label={labels.moreActionsFor.split("{{name}}").join(node.name)}
           aria-haspopup="menu"
           aria-expanded={activeMenuNodeId === node.id}
           tabIndex={-1}
@@ -559,7 +565,8 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
     defaultExpandedIds,
     defaultExpandDepth = 1,
     searchable = false,
-    searchPlaceholder = "Search...",
+    searchPlaceholder,
+    labels: labelsProp,
     showExpandAll = false,
     showRefresh = false,
     onRefresh,
@@ -588,6 +595,12 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
     theme,
     virtualized = "auto",
   } = props;
+
+  const labels = useMemo<TreeLabels>(
+    () => ({ ...DEFAULT_TREE_LABELS, ...labelsProp }),
+    [labelsProp],
+  );
+  const effectiveSearchPlaceholder = searchPlaceholder ?? labels.search;
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [dragState, setDragState] = useState<DragState>(INITIAL_DRAG_STATE);
@@ -982,13 +995,22 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
         }
 
         const anchor = expansion.nodeElementRefs.current.get(node.id);
-        if (anchor) setContextMenu({ x, y, node, items, anchor });
+        if (anchor)
+          setContextMenu({
+            x,
+            y,
+            node,
+            items,
+            anchor,
+            ariaLabel: labels.contextMenuFor.split("{{name}}").join(node.name),
+            confirmLabel: labels.confirmAction,
+          });
         return;
       }
 
       onContextMenuOpen?.({ node, x, y });
     },
-    [contextMenuItems, onContextMenuOpen, expansion.nodeElementRefs],
+    [contextMenuItems, onContextMenuOpen, expansion.nodeElementRefs, labels],
   );
 
   const closeContextMenu = useCallback(() => {
@@ -1122,10 +1144,10 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
               className={styles.searchInput}
               type="search"
               aria-controls={searchId}
-              placeholder={searchPlaceholder}
+              placeholder={effectiveSearchPlaceholder}
               value={search.query}
               onChange={(event) => handleSearchChange(event.target.value)}
-              aria-label="Search tree"
+              aria-label={labels.searchTree}
             />
           </div>}
           {searchRowExtra}
@@ -1134,8 +1156,8 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
               type="button"
               className={styles.iconButton}
               onClick={expansion.isAllExpanded ? expansion.collapseAll : expansion.expandAll}
-              title={expansion.isAllExpanded ? "Collapse all" : "Expand all"}
-              aria-label={expansion.isAllExpanded ? "Collapse all" : "Expand all"}
+              title={expansion.isAllExpanded ? labels.collapseAll : labels.expandAll}
+              aria-label={expansion.isAllExpanded ? labels.collapseAll : labels.expandAll}
             >
               {expansion.isAllExpanded ? (
                 <MdUnfoldLess size={16} aria-hidden="true" />
@@ -1149,8 +1171,8 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
               type="button"
               className={styles.iconButton}
               onClick={onRefresh}
-              title="Refresh"
-              aria-label="Refresh"
+              title={labels.refresh}
+              aria-label={labels.refresh}
             >
               <LuRefreshCw size={14} aria-hidden="true" />
             </button>
@@ -1166,11 +1188,11 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
         id={searchId}
         role="tree"
         onKeyDown={handleTreeKeyDown}
-        aria-label="Tree navigation"
+        aria-label={labels.treeNavigation}
       >
         {search.filteredNodes.length === 0 ? (
           <div className={styles.emptyState}>
-            {search.isSearching ? "No matching results" : "No items"}
+            {search.isSearching ? labels.noResults : labels.noItems}
           </div>
         ) : (
           <>
@@ -1207,6 +1229,7 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
               activeMenuNodeId={contextMenu?.node.id ?? null}
               onContextMenu={handleNodeContextMenu}
               onMoreClick={handleMoreButtonClick}
+              labels={labels}
             />
           ))}
           {windowed && <div role="presentation" style={{ height: (visibleRows.length - endRow) * rowHeight }} />}

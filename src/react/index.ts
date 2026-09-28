@@ -1,8 +1,10 @@
 export { Tree } from "./Tree";
+export { DEFAULT_TREE_LABELS } from "./libs/types";
 export type {
   ContextMenuItem,
   JsonPatchOp,
   TreeHandle,
+  TreeLabels,
   TreeProps,
   TreeRenderContext,
 } from "./libs/types";
