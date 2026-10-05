@@ -3,6 +3,7 @@ import {
   memo,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useImperativeHandle,
   useId,
   useMemo,
@@ -266,6 +267,14 @@ interface NodeRendererProps<TMetadata> {
   onMoreClick: (node: TreeNode<TMetadata>, event: React.MouseEvent) => void;
   /* Localized text */
   labels: TreeLabels;
+}
+
+// Event identity is independent of the current tree/drag state. Update after
+// commit so retained rows always dispatch against the latest committed nodes.
+function useCommittedEvent<T extends (...args: any[]) => any>(callback: T): T {
+  const latest = useRef(callback);
+  useLayoutEffect(() => { latest.current = callback; }, [callback]);
+  return useCallback(((...args: Parameters<T>) => latest.current(...args)) as T, []);
 }
 
 /** Only rows whose own state or callbacks change need to render again. */
@@ -1124,6 +1133,15 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
     .filter(Boolean)
     .join(" ");
 
+  const stableHandleSelect = useCommittedEvent(handleSelect);
+  const stableHandleDragStart = useCommittedEvent(handleDragStart);
+  const stableHandleDragOver = useCommittedEvent(handleDragOver);
+  const stableHandleDragLeave = useCommittedEvent(handleDragLeave);
+  const stableHandleDrop = useCommittedEvent(handleDrop);
+  const stableHandleDragEnd = useCommittedEvent(handleDragEnd);
+  const stableHandleNodeContextMenu = useCommittedEvent(handleNodeContextMenu);
+  const stableHandleMoreButtonClick = useCommittedEvent(handleMoreButtonClick);
+
   return (
     <div
       ref={rootRef}
@@ -1209,7 +1227,7 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
               isExpanded={expandedSet.has(node.id)}
               isSelected={selectedId === node.id}
               onToggle={expansion.toggleNode}
-              onSelect={handleSelect}
+              onSelect={stableHandleSelect}
               onNodeRef={expansion.setNodeElementRef}
               searchQuery={search.deferredQuery}
               showIndentGuides={showIndentGuides}
@@ -1220,15 +1238,15 @@ export const Tree = forwardRef(function Tree<TMetadata = unknown>(
               draggable={draggable}
               dragState={dragState}
               canDragNode={canDragNode(node)}
-              onDragStart={handleDragStart}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onDragEnd={handleDragEnd}
+              onDragStart={stableHandleDragStart}
+              onDragOver={stableHandleDragOver}
+              onDragLeave={stableHandleDragLeave}
+              onDrop={stableHandleDrop}
+              onDragEnd={stableHandleDragEnd}
               showContextMenuButton={Boolean(contextMenuItems || onContextMenuOpen)}
               activeMenuNodeId={contextMenu?.node.id ?? null}
-              onContextMenu={handleNodeContextMenu}
-              onMoreClick={handleMoreButtonClick}
+              onContextMenu={stableHandleNodeContextMenu}
+              onMoreClick={stableHandleMoreButtonClick}
               labels={labels}
             />
           ))}

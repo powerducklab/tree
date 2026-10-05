@@ -143,6 +143,26 @@ describe("drag constraints", () => {
     expect(onPatch.mock.calls[0]?.[0]).toEqual([{ op: "move", from: ["items", 0], path: ["items", 1] }]);
   });
 
+  it("moves across folders without rendering unrelated rows, then uses the updated tree for another drop", () => {
+    let current: TreeNode[] = [
+      { id: "a", name: "A", children: [{ id: "item", name: "Item" }] },
+      { id: "b", name: "B", children: [{ id: "other", name: "Other" }] },
+      { id: "c", name: "C", children: Array.from({ length: 430 }, (_, i) => ({ id: `stable-${i}`, name: `Stable ${i}` })) },
+    ];
+    const icons = vi.fn((_context: any) => null);
+    const onMove = vi.fn((nodes: TreeNode[]) => { current = nodes; });
+    const onReorder = vi.fn();
+    const view = render(<Tree nodes={current} draggable virtualized={false} renderIcon={icons} defaultExpandDepth={3} onMove={onMove} onReorder={onReorder} />);
+    icons.mockClear();
+    drag(screen.getByRole("treeitem", { name: "Item" }), screen.getByRole("treeitem", { name: "B", exact: true }), 0.5);
+    view.rerender(<Tree nodes={current} draggable virtualized={false} renderIcon={icons} defaultExpandDepth={3} onMove={onMove} onReorder={onReorder} />);
+    expect(current[1]!.children!.map(node => node.id)).toEqual(["other", "item"]);
+    expect(icons.mock.calls.some(([context]: any[]) => context.node.id.startsWith("stable-"))).toBe(false);
+    drag(screen.getByRole("treeitem", { name: "Item" }), screen.getByRole("treeitem", { name: "Other" }), 0.1);
+    expect(onReorder).toHaveBeenCalledOnce();
+    expect(onReorder.mock.calls[0][0].parentId).toBe("b");
+  });
+
   it("does not emit array patches for object property paths", () => {
     const onPatch = vi.fn();
     render(<Tree nodes={[{ id: "a", name: "A", metadata: { jsonPath: ["properties", "a"] } }, { id: "b", name: "B", metadata: { jsonPath: ["properties", "b"] } }]} draggable onPatch={onPatch} />);
@@ -226,4 +246,21 @@ it("waits for the virtual render window before focusing Home and End targets", a
   await waitFor(() => expect(last).toHaveFocus());
   fireEvent.keyDown(last, { key: "Home" });
   await waitFor(() => expect(screen.getByRole("treeitem", { name: "Node 0", exact: true })).toHaveFocus());
+});
+
+
+describe("row isolation after structural updates", () => {
+  it("keeps unchanged rows memoized and uses the latest selection callback", () => {
+    const nodes = Array.from({ length: 432 }, (_, i) => ({ id: `row-${i}`, name: `Row ${i}` }));
+    const icons = vi.fn((_context: any) => null);
+    const first = vi.fn(), latest = vi.fn();
+    const view = render(<Tree nodes={nodes} virtualized={false} renderIcon={icons} onSelect={first} draggable />);
+    icons.mockClear();
+    const updated = nodes.map((node, i) => i === 1 ? { ...node, name: "Updated" } : node);
+    view.rerender(<Tree nodes={updated} virtualized={false} renderIcon={icons} onSelect={latest} draggable />);
+    expect(icons).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("treeitem", { name: "Row 400" }));
+    expect(latest).toHaveBeenCalledWith(nodes[400]);
+    expect(first).not.toHaveBeenCalled();
+  });
 });
