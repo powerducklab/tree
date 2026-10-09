@@ -1,6 +1,6 @@
 {
   "name": "@powerduck/tree",
-  "version": "0.7.20",
+  "version": "0.7.21",
   "description": "Extensible tree component for API navigation, schema exploration, and documentation. Supports OpenAPI 3.2 nested tags, x-tagGroups, and custom data sources.",
   "license": "MIT",
   "author": "powerduck",
@@ -40,7 +40,6 @@
   ],
   "scripts": {
     "build": "tsup",
-    "postbuild": "ln -sf /Users/electron/powerduck-react/node_modules/react node_modules/react && ln -sf /Users/electron/powerduck-react/node_modules/react-dom node_modules/react-dom",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",

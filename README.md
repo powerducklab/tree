@@ -620,3 +620,7 @@ npm run benchmark   # Build and compare the old/new sorting comparator
 The benchmark reports medians from seven runs over a deterministic shuffled input.
 It measures sorting, traversal, and filtering only, not end-to-end browser latency.
 See [QUALITY.md](./QUALITY.md) for findings, evidence, and remaining limitations.
+
+## 0.7.21 — Portable builds
+
+The build no longer creates React/React DOM symlinks pointing into a hard-coded developer workspace. React remains a peer dependency supplied by the consuming application.
