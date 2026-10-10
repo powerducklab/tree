@@ -1,3 +1,4 @@
+import { operationEntries, operationPath } from "@powerduck/openapi-parser/methods";
 import { buildTagHierarchy } from "./tag-hierarchy";
 import type { Oas32Document } from "@powerduck/openapi-parser";
 
@@ -65,16 +66,7 @@ export interface OpenApiTreeBuildResult {
 /* Constants                                                                  */
 /* -------------------------------------------------------------------------- */
 
-const HTTP_METHODS = [
-  "get",
-  "put",
-  "post",
-  "delete",
-  "options",
-  "head",
-  "patch",
-  "trace",
-] as const;
+
 
 const DEFAULT_OPTIONS: Required<OpenApiTreeOptions> = {
   showInternal: false,
@@ -170,8 +162,7 @@ function parseOperations(document: JsonRecord): ParsedOperation[] {
       continue;
     }
 
-    for (const method of HTTP_METHODS) {
-      const rawOperation = pathItem[method];
+    for (const [method, rawOperation] of operationEntries(pathItem)) {
 
       if (rawOperation === undefined || rawOperation === null) {
         continue;
@@ -192,7 +183,7 @@ function parseOperations(document: JsonRecord): ParsedOperation[] {
 
       const name = summary ?? operationId ?? `${method.toUpperCase()} ${path}`;
       const id = operationId ?? `${method}:${path}`;
-      const pointer = `/paths/${encodeURIComponent(path)}/${method}`;
+      const pointer = `/paths/${encodeURIComponent(path)}/${operationPath(method, pathItem).map(encodeURIComponent).join("/")}`;
 
       operations.push({
         id,
@@ -685,8 +676,7 @@ function buildWebhooksSection(
       continue;
     }
 
-    for (const method of HTTP_METHODS) {
-      const rawOperation = pathItem[method];
+    for (const [method, rawOperation] of operationEntries(pathItem)) {
       const operation = asRecord(rawOperation);
 
       if (!operation || isHidden(operation, options.showInternal)) {
@@ -707,7 +697,7 @@ function buildWebhooksSection(
           operationId,
           deprecated: getBoolean(operation.deprecated) === true,
           summary,
-          pointer: `/webhooks/${encodeURIComponent(name)}/${method}`,
+          pointer: `/webhooks/${encodeURIComponent(name)}/${operationPath(method, pathItem).map(encodeURIComponent).join("/")}`,
           source: "tag",
           kind: "webhook",
         },

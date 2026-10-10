@@ -624,3 +624,7 @@ See [QUALITY.md](./QUALITY.md) for findings, evidence, and remaining limitations
 ## 0.7.21 — Portable builds
 
 The build no longer creates React/React DOM symlinks pointing into a hard-coded developer workspace. React remains a peer dependency supplied by the consuming application.
+
+### Extended HTTP methods
+
+HTTP operation discovery includes all nine fixed OpenAPI 3.2 methods (including `trace` and `query`) and custom verbs in `additionalOperations`, such as `PROPFIND`, `REPORT`, and `CUSTOM-VERB`. Shared method helpers come from `@powerduck/openapi-parser/methods`; path metadata is not interpreted as an operation. Custom verbs must be valid HTTP tokens. Use OpenAPI 3.2 when declaring QUERY or `additionalOperations`.

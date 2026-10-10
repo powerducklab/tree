@@ -1,3 +1,4 @@
+import { operationEntries, operationPath } from "@powerduck/openapi-parser/methods";
 import { buildTagHierarchy } from "./tag-hierarchy";
 import type { Oas32Document } from "@powerduck/openapi-parser";
 
@@ -79,16 +80,7 @@ export interface DocTreeBuildResult {
 /* Constants                                                                  */
 /* -------------------------------------------------------------------------- */
 
-const HTTP_METHODS = [
-  "get",
-  "put",
-  "post",
-  "delete",
-  "options",
-  "head",
-  "patch",
-  "trace",
-] as const;
+
 
 const DEFAULT_OPTIONS: Required<DocTreeOptions> = {
   showInternal: false,
@@ -350,8 +342,7 @@ function parseDocOperations(document: JsonRecord): ParsedDocOperation[] {
       continue;
     }
 
-    for (const method of HTTP_METHODS) {
-      const rawOperation = pathItem[method];
+    for (const [method, rawOperation] of operationEntries(pathItem)) {
       const operation = asRecord(rawOperation);
 
       if (!operation) {
@@ -368,7 +359,7 @@ function parseDocOperations(document: JsonRecord): ParsedDocOperation[] {
 
       const name = summary ?? operationId ?? `${method.toUpperCase()} ${path}`;
       const id = operationId ?? `${method}:${path}`;
-      const pointer = `/paths/${encodeURIComponent(path)}/${method}`;
+      const pointer = `/paths/${encodeURIComponent(path)}/${operationPath(method, pathItem).map(encodeURIComponent).join("/")}`;
 
       operations.push({
         id,
